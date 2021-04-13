@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/weaveworks/weave-gitops/pkg/version"
+
+	"github.com/weaveworks/weave-gitops/pkg/fluxops"
 )
 
 //go:embed bin/flux
@@ -21,12 +23,10 @@ var Cmd = &cobra.Command{
 var exePath string
 
 func init() {
-	homeDir, err := os.UserHomeDir()
+	exePath, err := fluxops.FluxPath()
 	checkError(err)
-
-	path := fmt.Sprintf("%v/.wego/bin", homeDir)
-	exePath = fmt.Sprintf("%v/flux-%v", path, version.FluxVersion)
 	if _, err := os.Stat(exePath); os.IsNotExist(err) {
+		path := filepath.Dir(exePath)
 		// Clean bin if file doesnt exist
 		checkError(os.RemoveAll(path))
 		checkError(os.MkdirAll(path, 0755))
