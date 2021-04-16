@@ -1,5 +1,7 @@
 package utils
 
+// Utilities to run external commands.
+
 import (
 	"bufio"
 	"bytes"
@@ -8,6 +10,7 @@ import (
 	"strings"
 )
 
+// CallCommand will run an external command, displaying its output interactively and return its output.
 func CallCommand(cmdstr string) ([]byte, error) {
 	cmd := exec.Command("sh", "-c", Escape(cmdstr))
 	var out strings.Builder

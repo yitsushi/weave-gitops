@@ -50,11 +50,11 @@ func Bootstrap(owner, repoName string) error {
 		return err
 	}
 	if isOrg {
-		if _, err := CallFlux(fmt.Sprintf("bootstrap github --owner=%s --repository=%s", owner, repoName)); err != nil {
+		if _, err := CallFlux(fmt.Sprintf("bootstrap github --timeout=15m --owner=%s --repository=%s", owner, repoName)); err != nil {
 			return err
 		}
 	} else {
-		if _, err := CallFlux(fmt.Sprintf("bootstrap github --owner=%s --repository=%s --branch=main --private=false --personal=true", owner, repoName)); err != nil {
+		if _, err := CallFlux(fmt.Sprintf("bootstrap github --timeout=15m --owner=%s --repository=%s --branch=main --private=false --personal=true", owner, repoName)); err != nil {
 			return err
 		}
 	}
@@ -62,7 +62,26 @@ func Bootstrap(owner, repoName string) error {
 		return fmt.Errorf("Failed to install flux")
 	}
 
-	return nil
+	fluxRepoDir := filepath.Join(os.Getenv("HOME"), ".wego", "repositories")
+	err = os.MkdirAll(fluxRepoDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	err = os.Chdir(fluxRepoDir)
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(currentDir)
+	fluxRepoName, err := GetRepoName()
+	if err != nil {
+		return err
+	}
+	return utils.CallCommandForEffect(fmt.Sprintf("git clone https://github.com/%s/%s.git", owner, fluxRepoName))
 }
 
 func GetOwnerFromEnv() (string, error) {
@@ -102,6 +121,24 @@ func getUserFromHubCredentials() (string, error) {
 	}
 
 	return data["github.com"].([]interface{})[0].(map[string]interface{})["user"].(string), nil
+}
+
+func IsPrivate(owner, repo string) (bool, error) {
+	token := os.Getenv("GITHUB_TOKEN")
+	response, _, err := utils.CallCommandSeparatingOutputStreams(fmt.Sprintf("curl -u %s:%s https://api.github.com/repos/%s/%s", owner, token, owner, repo))
+	if err != nil {
+		return false, err
+	}
+
+	var data map[string]interface{}
+	err = json.Unmarshal(response, &data)
+	if err != nil {
+		return false, err
+	}
+	if privateFlag, ok := data["private"].(bool); ok {
+		return privateFlag, nil
+	}
+	return false, fmt.Errorf("Failed to determine access rights for repository: %s\n", repo)
 }
 
 func isOrganization(owner string) (bool, error) {
