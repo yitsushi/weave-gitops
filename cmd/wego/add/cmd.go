@@ -5,20 +5,32 @@ package add
 
 import (
 	"bufio"
+	"embed"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/k0kubun/pp"
 	"github.com/lithammer/dedent"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/weaveworks/weave-gitops/pkg/fluxops"
 	"github.com/weaveworks/weave-gitops/pkg/status"
 	"github.com/weaveworks/weave-gitops/pkg/utils"
 )
+
+//go:embed manifests/bootstrap/kpack-bar.yaml
+var embeddedManifests embed.FS
 
 type paramSet struct {
 	name   string
@@ -38,7 +50,94 @@ var Cmd = &cobra.Command{
         Associates an additional git repository with a wego cluster so that its contents may be managed via GitOps
     `)),
 	Example: "wego add",
-	Run:     runCmd,
+	Run:     runCmd2,
+}
+
+func runCmd2(cmd *cobra.Command, args []string) {
+	// // creating temp dir to dump kpack manifests to copy to wego repo
+	// tmpDir, err := ioutil.TempDir("", "wego-bootstrap-")
+	// checkAddError(err)
+
+	// // defer os.RemoveAll(tmpDir)
+	// fmt.Println("Saving files to: ", tmpDir)
+	// err = writeEmbeddedManifests(tmpDir)
+	// checkAddError(err)
+
+	cloneRepo()
+}
+
+func cloneRepo() {
+	tmpDir, err := ioutil.TempDir("", "wego-repo-")
+	// defer os.RemoveAll(tmpDir)
+	checkAddError(err)
+	pp.Println(tmpDir)
+
+	publicKeys, err := ssh.NewPublicKeysFromFile("git", filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"), "")
+	checkAddError(err)
+
+	repository := "git@github.com:luizbafilho/fleet-infra.git"
+	r, err := git.PlainClone(tmpDir, false, &git.CloneOptions{
+		URL:  repository,
+		Auth: publicKeys,
+	})
+	checkAddError(err)
+	fmt.Println("Repository cloned")
+
+	w, err := r.Worktree()
+	checkAddError(err)
+
+	manifests, err := w.Filesystem.ReadDir(".")
+	checkAddError(err)
+	for _, manifest := range manifests {
+		pp.Println(manifest.Name())
+	}
+
+	err = writeKpackEmbeddedManifests(filepath.Join(tmpDir, "clusters", "my-cluster"))
+	checkAddError(err)
+
+	err = w.AddGlob(".")
+	checkAddError(errors.Wrap(err, "failed to add"))
+
+	_, err = w.Commit("add kpack controller and service account", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "John Doe",
+			Email: "john@doe.org",
+			When:  time.Now(),
+		},
+	})
+	checkAddError(errors.Wrap(err, "failed to commit"))
+
+	err = r.Push(&git.PushOptions{
+		Auth: publicKeys,
+	})
+	checkAddError(err)
+}
+
+func writeKpackEmbeddedManifests(dir string) error {
+	embeddedDir := "manifests/bootstrap"
+	manifests, err := fs.ReadDir(embeddedManifests, embeddedDir)
+	if err != nil {
+		return err
+	}
+	for _, manifest := range manifests {
+		if manifest.IsDir() {
+			continue
+		}
+
+		data, err := fs.ReadFile(embeddedManifests, path.Join(embeddedDir, manifest.Name()))
+		if err != nil {
+			return fmt.Errorf("reading file failed: %w", err)
+		}
+
+		kpackDir := dir + "/kpack"
+		os.MkdirAll(kpackDir, os.ModePerm)
+
+		err = os.WriteFile(path.Join(kpackDir, manifest.Name()), data, 0666)
+		if err != nil {
+			return fmt.Errorf("writing file failed: %w", err)
+		}
+	}
+	return nil
 }
 
 // checkError will print a message to stderr and exit
@@ -114,6 +213,7 @@ func bootstrapOrExit() {
 	repoName, err := fluxops.GetRepoName()
 	checkAddError(err)
 	fluxops.Bootstrap(getOwner(), repoName)
+
 }
 
 func askUser(question string) bool {
