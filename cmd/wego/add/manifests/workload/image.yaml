@@ -1,0 +1,19 @@
+apiVersion: kpack.io/v1alpha1
+kind: Image
+metadata:
+  name: {{.Name}}
+  namespace: kpack
+spec:
+  tag: {{.DockerTag}}
+  serviceAccount: kpack-service-account
+  builder:
+    name: my-builder
+    kind: Builder
+  source:
+    git:
+      url: {{.GitURL}}
+      revision: master
+  build:
+    env:
+      - name: BP_GO_TARGETS
+        value: ./cmd/podinfo
