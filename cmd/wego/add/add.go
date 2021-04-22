@@ -17,6 +17,15 @@ import (
 //go:embed manifests/workload/image.yaml
 var embeddedImageManifest []byte
 
+//go:embed manifests/workload/source.yaml
+var embeddedSourceManifest []byte
+
+//go:embed manifests/workload/kustomize.yaml
+var embeddedKustomizeManifest []byte
+
+//go:embed manifests/workload/image-updater.yaml
+var embeddedImageUpdaterManifest []byte
+
 func runCmd2(cmd *cobra.Command, args []string) {
 	if params.url == "" {
 		checkAddError(fmt.Errorf("url is required"))
@@ -31,7 +40,7 @@ func runCmd2(cmd *cobra.Command, args []string) {
 		clusterDir := path.Join(repoDir, "clusters", "my-cluster")
 
 		// Writing flux manifests: kustomization and source
-		err := writeFluxManifests(clusterDir, workloadRepoName)
+		err := writeFluxManifests(clusterDir, owner, workloadRepoName)
 		checkError("failed to generate kpack manifests", err)
 
 		// Writing kpack manifests: builder and image
@@ -43,21 +52,35 @@ func runCmd2(cmd *cobra.Command, args []string) {
 	checkError("failed to push changes to github", err)
 }
 
-func writeFluxManifests(clusterDir string, repoName string) error {
+func writeFluxManifests(clusterDir string, owner string, repoName string) error {
 	workloadDir := path.Join(clusterDir, "workloads", repoName)
 	err := os.MkdirAll(workloadDir, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	sourceManifest := generateSourceManifest(repoName)
+	workload := Workload{
+		Name:      repoName,
+		GitURL:    params.url,
+		Branch:    params.branch,
+		Path:      params.path,
+		DockerTag: fmt.Sprintf("%s/%s", owner, repoName),
+	}
+
+	sourceManifest := buildManifest(workload, embeddedSourceManifest)
 	err = os.WriteFile(path.Join(workloadDir, "source.yaml"), sourceManifest, 0666)
 	if err != nil {
 		return err
 	}
 
-	kustomizeManifest := generateKustomizeManifest(repoName)
+	kustomizeManifest := buildManifest(workload, embeddedKustomizeManifest)
 	err = os.WriteFile(path.Join(workloadDir, "kustomize.yaml"), kustomizeManifest, 0666)
+	if err != nil {
+		return err
+	}
+
+	imageUpdaterManifest := buildManifest(workload, embeddedImageUpdaterManifest)
+	err = os.WriteFile(path.Join(workloadDir, "image-updater.yaml"), imageUpdaterManifest, 0666)
 	if err != nil {
 		return err
 	}
@@ -85,41 +108,32 @@ func writeKpackEmbeddedManifests(clusterDir string, owner string, repoName strin
 	return nil
 }
 
-// func writeKpackEmbeddedManifests(clusterDir string) error {
-// 	embeddedDir := "manifests/bootstrap"
-// 	manifests, err := fs.ReadDir(embeddedManifests, embeddedDir)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	for _, manifest := range manifests {
-// 		if manifest.IsDir() {
-// 			continue
-// 		}
-
-// 		data, err := fs.ReadFile(embeddedManifests, path.Join(embeddedDir, manifest.Name()))
-// 		if err != nil {
-// 			return fmt.Errorf("reading file failed: %w", err)
-// 		}
-
-// 		kpackDir := path.Join(clusterDir, "kpack")
-// 		os.MkdirAll(kpackDir, os.ModePerm)
-
-// 		err = os.WriteFile(path.Join(kpackDir, manifest.Name()), data, 0666)
-// 		if err != nil {
-// 			return fmt.Errorf("writing file failed: %w", err)
-// 		}
-// 	}
-// 	return nil
-// }
-
 type Workload struct {
 	Name      string
 	DockerTag string
 	GitURL    string
+	Path      string
+	Branch    string
+	Owner     string
 }
 
 func generateImageManifest(workload Workload) []byte {
 	tpl, err := template.New("image").Parse(string(embeddedImageManifest))
+	checkAddError(err)
+
+	var b bytes.Buffer
+	writter := io.Writer(&b)
+
+	err = tpl.Execute(writter, workload)
+	if err != nil {
+		panic(err)
+	}
+
+	return b.Bytes()
+}
+
+func buildManifest(workload Workload, templateData []byte) []byte {
+	tpl, err := template.New(workload.Name).Parse(string(templateData))
 	checkAddError(err)
 
 	var b bytes.Buffer

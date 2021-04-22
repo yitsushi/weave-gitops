@@ -1,0 +1,24 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1alpha1
+kind: ImageRepository
+metadata:
+  name: {{.Name}}
+  namespace: flux-system
+spec:
+  image: {{.DockerTag}}
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1alpha1
+kind: ImagePolicy
+metadata:
+  name: {{.Name}}
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: {{.Name}}
+  filterTags:
+    pattern: 'b(?P<buildNumber>.*)'
+    extract: '$buildNumber'
+  policy:
+    alphabetical:
+      order: asc

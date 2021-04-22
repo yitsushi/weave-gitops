@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - kpack-crds.yaml
   - kpack-components.yaml
+  - image-update-automation.yaml
