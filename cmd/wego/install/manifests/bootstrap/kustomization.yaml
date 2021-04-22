@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - kpack-crds.yaml
   - kpack-components.yaml
-  - kpack-builder.yaml

@@ -21,11 +21,12 @@ import (
 )
 
 type paramSet struct {
-	name   string
-	url    string
-	branch string
-	path   string
-	owner  string
+	name      string
+	url       string
+	branch    string
+	path      string
+	owner     string
+	infraRepo string
 }
 
 var (
@@ -61,6 +62,7 @@ func init() {
 	Cmd.Flags().StringVar(&params.branch, "branch", "main", "Branch to watch within git repository")
 	Cmd.Flags().StringVar(&params.path, "path", "./", "Path to watch within git repository")
 	Cmd.Flags().StringVar(&params.owner, "owner", "", "Git repository owner")
+	Cmd.Flags().StringVar(&params.infraRepo, "infra-repo", "wego-infra", "infra repository")
 }
 
 func updateParametersIfNecessary() {
