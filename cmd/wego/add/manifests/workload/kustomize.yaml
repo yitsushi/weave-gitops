@@ -15,4 +15,4 @@ spec:
   images:
   - name: {{.DockerTag}}
     newName: {{.DockerTag}}
-    newTag: b5.20210419.231747 # {"$imagepolicy": "flux-system:{{.Name}}:tag"}
+    newTag: latest # {"$imagepolicy": "flux-system:{{.Name}}:tag"}
