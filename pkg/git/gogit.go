@@ -52,6 +52,7 @@ func (g *GoGit) Open(path string) (*gogit.Repository, error) {
 		return nil, err
 	}
 
+	fmt.Println("doing open")
 	g.repository = repo
 
 	return repo, nil
@@ -120,7 +121,7 @@ func (g *GoGit) Clone(ctx context.Context, path, url, branch string) (bool, erro
 
 func (g *GoGit) Write(path string, content []byte) error {
 	if g.repository == nil {
-		return ErrNoGitRepository
+		return fmt.Errorf("could not write to git: %s", ErrNoGitRepository)
 	}
 
 	wt, err := g.repository.Worktree()
@@ -140,7 +141,7 @@ func (g *GoGit) Write(path string, content []byte) error {
 
 func (g *GoGit) Commit(message Commit, filters ...func(string) bool) (string, error) {
 	if g.repository == nil {
-		return "", ErrNoGitRepository
+		return "", fmt.Errorf("could not commit to git: %s", ErrNoGitRepository)
 	}
 
 	wt, err := g.repository.Worktree()
@@ -207,7 +208,7 @@ func (g *GoGit) Commit(message Commit, filters ...func(string) bool) (string, er
 
 func (g *GoGit) Push(ctx context.Context) error {
 	if g.repository == nil {
-		return ErrNoGitRepository
+		return fmt.Errorf("could not push: %s", ErrNoGitRepository)
 	}
 
 	return g.repository.PushContext(ctx, &gogit.PushOptions{

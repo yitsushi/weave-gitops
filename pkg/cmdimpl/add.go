@@ -321,11 +321,11 @@ func Add(args []string, allParams AddParamSet, deps *AddDependencies) error {
 
 	switch strings.ToUpper(params.AppConfigUrl) {
 	case string(ConfigTypeNone):
-		return addAppWithNoConfigRepo()
+		return wrapError(addAppWithNoConfigRepo(), "could not apply using no config repo")
 	case string(ConfigTypeUserRepo):
-		return addAppWithConfigInUserRepo(ctx, deps.GitClient)
+		return wrapError(addAppWithConfigInUserRepo(ctx, deps.GitClient), "could not apply using user repo")
 	default:
-		return addAppWithConfigInExternalRepo(ctx, deps.GitClient)
+		return wrapError(addAppWithConfigInExternalRepo(ctx, deps.GitClient), "could not apply using external repo")
 	}
 }
 
@@ -458,7 +458,7 @@ func generateSource(repoName, repoUrl string, sourceType SourceType) ([]byte, er
 				return fluxops.CallFlux(cmd)
 			})
 			if err != nil {
-				return nil, wrapError(err, "could not create git secret")
+				return nil, wrapError(fmt.Errorf("error: %s; %s", err, output), "could not create git secret")
 			}
 			owner, err := getOwnerFromUrl(repoUrl)
 			if err != nil {
@@ -581,7 +581,7 @@ func writeAppYaml(gitClient git.Git, basePath string, appYaml []byte) error {
 		fmt.Printf("Writing app.yaml to '%s'\n", appYamlPath)
 		return nil
 	}
-	return gitClient.Write(appYamlPath, appYaml)
+	return wrapError(gitClient.Write(appYamlPath, appYaml), "could not write app yaml")
 }
 
 func writeGoats(gitClient git.Git, basePath string, manifests ...[]byte) error {
@@ -595,7 +595,7 @@ func writeGoats(gitClient git.Git, basePath string, manifests ...[]byte) error {
 		return nil
 	}
 	goat := bytes.Join(manifests, []byte(""))
-	return gitClient.Write(goatPath, goat)
+	return wrapError(gitClient.Write(goatPath, goat), "could not write goat?")
 }
 
 func cloneToTempDir(ctx context.Context, gitClient git.Git) (string, error) {

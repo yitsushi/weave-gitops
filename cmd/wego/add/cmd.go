@@ -60,9 +60,17 @@ func runCmd(cmd *cobra.Command, args []string) {
 
 	gitClient := git.New(authMethod)
 
+	fmt.Printf("%+v\n", gitClient)
+
+	if gitClient == nil {
+		panic("")
+	}
+
 	deps := &cmdimpl.AddDependencies{
 		GitClient: gitClient,
 	}
+
+	fmt.Fprintf(shims.Stderr(), "%+v\n", deps)
 	if err := cmdimpl.Add(args, params, deps); err != nil {
 		fmt.Fprintf(shims.Stderr(), "%v\n", err)
 		shims.Exit(1)
