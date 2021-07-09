@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/weaveworks/weave-gitops/pkg/api/applications"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
+	"github.com/weaveworks/weave-gitops/pkg/services/app"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -13,11 +14,13 @@ type server struct {
 	pb.UnimplementedApplicationsServer
 
 	kube kube.Kube
+	apps app.AppService
 }
 
-func NewApplicationsServer(kubeSvc kube.Kube) pb.ApplicationsServer {
+func NewApplicationsServer(kubeSvc kube.Kube, apps app.AppService) pb.ApplicationsServer {
 	return &server{
 		kube: kubeSvc,
+		apps: apps,
 	}
 }
 
@@ -43,7 +46,7 @@ func (s *server) ListApplications(ctx context.Context, msg *pb.ListApplicationsR
 }
 
 func (s *server) GetApplication(ctx context.Context, msg *pb.GetApplicationRequest) (*pb.GetApplicationResponse, error) {
-	app, err := s.kube.GetApplication(ctx, types.NamespacedName{Name: msg.Name, Namespace: msg.Namespace})
+	app, err := s.apps.Get(ctx, types.NamespacedName{Name: msg.Name, Namespace: msg.Namespace})
 
 	if err != nil {
 		return nil, fmt.Errorf("could not get application: %s", err)
@@ -54,4 +57,8 @@ func (s *server) GetApplication(ctx context.Context, msg *pb.GetApplicationReque
 		Url:  app.Spec.URL,
 		Path: app.Spec.Path,
 	}}, nil
+}
+
+func (s *server) AddApplication(ctx context.Context, msg *pb.AddApplicationRequest) (*pb.AddApplicationResponse, error) {
+	return &pb.AddApplicationResponse{}, nil
 }
