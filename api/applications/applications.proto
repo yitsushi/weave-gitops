@@ -36,6 +36,15 @@ service Applications {
             get : "/v1/applications/{name}"
         };
     }
+
+    /**
+    * AddApplication associates an application with GitOps automation to the cluster
+    */
+    rpc AddApplication(AddApplicationRequest) returns (AddApplicationResponse) {
+        option (google.api.http) = {
+            post : "/v1/applications"
+        };
+    }
 }
 
 message Application {
@@ -58,5 +67,31 @@ message GetApplicationRequest {
 }
 
 message GetApplicationResponse {
+    Application application = 1;
+}
+
+message AddApplicationRequest {
+    string name   = 1;
+    string url    = 2;
+    string path   = 3;
+    string branch = 4;
+    enum DeploymentType {
+        KUSTOMIZE = 0;
+        HELM      = 1;
+    }
+    DeploymentType deployment_type = 5;
+    string         chart           = 6;
+    enum SourceType {
+        GIT   = 0;
+        CHART = 1;
+    }
+    SourceType source_type    = 7;
+    string     app_config_url = 8;
+    string     namespace      = 9;
+    bool       dry_run        = 10;
+    bool       auto_merge     = 11;
+}
+
+message AddApplicationResponse {
     Application application = 1;
 }
