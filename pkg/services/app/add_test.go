@@ -30,8 +30,8 @@ var (
 	kubeClient   *kubefakes.FakeKube
 	gitProviders *gitprovidersfakes.FakeGitProviderHandler
 
-	appSrv        app.AppService
-	defaultParams app.AddParams
+	appSrv        AppService
+	defaultParams AddParams
 	ctx           context.Context
 )
 
@@ -114,7 +114,7 @@ var _ = Describe("Add", func() {
 
 	Describe("checks for existing deploy key before creating secret", func() {
 		It("looks up deploy key and skips creating secret if found", func() {
-			defaultParams.SourceType = app.SourceTypeGit
+			defaultParams.SourceType = SourceTypeGit
 
 			gitProviders.DeployKeyExistsStub = func(s1, s2 string) (bool, error) {
 				return true, nil
@@ -133,7 +133,7 @@ var _ = Describe("Add", func() {
 		})
 
 		It("looks up deploy key and creates secret if not found", func() {
-			defaultParams.SourceType = app.SourceTypeGit
+			defaultParams.SourceType = SourceTypeGit
 
 			err := appSrv.Add(ctx, defaultParams)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -161,7 +161,7 @@ var _ = Describe("Add", func() {
 
 		Describe("generates source manifest", func() {
 			It("creates GitRepository when source type is git", func() {
-				defaultParams.SourceType = app.SourceTypeGit
+				defaultParams.SourceType = SourceTypeGit
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -221,7 +221,7 @@ var _ = Describe("Add", func() {
 
 			It("creates a helm release using a git source if source type is git", func() {
 				defaultParams.Path = "./charts/my-chart"
-				defaultParams.DeploymentType = app.DeployTypeHelm
+				defaultParams.DeploymentType = DeployTypeHelm
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -304,7 +304,7 @@ var _ = Describe("Add", func() {
 
 		Describe("generates source manifest", func() {
 			It("creates GitRepository when source type is git", func() {
-				defaultParams.SourceType = app.SourceTypeGit
+				defaultParams.SourceType = SourceTypeGit
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -377,7 +377,7 @@ var _ = Describe("Add", func() {
 
 			It("creates a helm release using a git source if source type is git", func() {
 				defaultParams.Path = "./charts/my-chart"
-				defaultParams.DeploymentType = app.DeployTypeHelm
+				defaultParams.DeploymentType = DeployTypeHelm
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -501,7 +501,7 @@ var _ = Describe("Add", func() {
 
 		Describe("generates source manifest", func() {
 			It("creates GitRepository when source type is git", func() {
-				defaultParams.SourceType = app.SourceTypeGit
+				defaultParams.SourceType = SourceTypeGit
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -612,7 +612,7 @@ var _ = Describe("Add", func() {
 
 			It("creates a helm release using a git source if source type is git", func() {
 				defaultParams.Path = "./charts/my-chart"
-				defaultParams.DeploymentType = app.DeployTypeHelm
+				defaultParams.DeploymentType = DeployTypeHelm
 
 				err := appSrv.Add(ctx, defaultParams)
 				Expect(err).ShouldNot(HaveOccurred())

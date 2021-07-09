@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	pb "github.com/weaveworks/weave-gitops/pkg/api/applications"
-	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -13,19 +12,17 @@ import (
 type server struct {
 	pb.UnimplementedApplicationsServer
 
-	kube kube.Kube
 	apps app.AppService
 }
 
-func NewApplicationsServer(kubeSvc kube.Kube, apps app.AppService) pb.ApplicationsServer {
+func NewApplicationsServer(apps app.AppService) pb.ApplicationsServer {
 	return &server{
-		kube: kubeSvc,
 		apps: apps,
 	}
 }
 
 func (s *server) ListApplications(ctx context.Context, msg *pb.ListApplicationsRequest) (*pb.ListApplicationsResponse, error) {
-	apps, err := s.kube.GetApplications(ctx, msg.GetNamespace())
+	apps, err := s.apps.List(ctx, msg.GetNamespace())
 	if err != nil {
 		return nil, err
 	}
@@ -60,5 +57,23 @@ func (s *server) GetApplication(ctx context.Context, msg *pb.GetApplicationReque
 }
 
 func (s *server) AddApplication(ctx context.Context, msg *pb.AddApplicationRequest) (*pb.AddApplicationResponse, error) {
+	addParams := app.AddParams{
+		Name:           msg.Name,
+		Namespace:      msg.Namespace,
+		Url:            msg.Url,
+		Path:           msg.Path,
+		Branch:         msg.Branch,
+		DeploymentType: app.DeploymentType(msg.DeploymentType.String()),
+		Chart:          msg.Chart,
+		SourceType:     app.SourceType(msg.SourceType.String()),
+		AppConfigUrl:   msg.AppConfigUrl,
+		DryRun:         msg.DryRun,
+		AutoMerge:      msg.AutoMerge,
+	}
+
+	if err := s.apps.Add(ctx, addParams); err != nil {
+		return nil, fmt.Errorf("could not add app: %w", err)
+	}
+
 	return &pb.AddApplicationResponse{}, nil
 }

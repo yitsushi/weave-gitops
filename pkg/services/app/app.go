@@ -12,9 +12,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+//counterfeiter:generate . AppService
 type AppService interface {
 	Add(ctx context.Context, params AddParams) error
 	Get(ctx context.Context, name types.NamespacedName) (*wego.Application, error)
+	List(ctx context.Context, namespace string) ([]wego.Application, error)
 }
 
 type App struct {

@@ -11,6 +11,7 @@ import (
 	pb "github.com/weaveworks/weave-gitops/pkg/api/applications"
 	"github.com/weaveworks/weave-gitops/pkg/kube/kubefakes"
 	"github.com/weaveworks/weave-gitops/pkg/server"
+	"github.com/weaveworks/weave-gitops/pkg/services/app/appfakes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -32,6 +33,7 @@ var client pb.ApplicationsClient
 var conn *grpc.ClientConn
 var err error
 var kubeClient *kubefakes.FakeKube
+var appSvc *appfakes.FakeAppService
 
 func bufDialer(context.Context, string) (net.Conn, error) {
 	return lis.Dial()
@@ -41,9 +43,9 @@ var _ = BeforeEach(func() {
 	lis = bufconn.Listen(bufSize)
 	s = grpc.NewServer()
 
-	kubeClient = &kubefakes.FakeKube{}
+	appSvc = &appfakes.FakeAppService{}
 
-	apps = server.NewApplicationsServer(kubeClient)
+	apps = server.NewApplicationsServer(appSvc)
 	pb.RegisterApplicationsServer(s, apps)
 
 	go func() {

@@ -11,8 +11,14 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/sirupsen/logrus"
 	pb "github.com/weaveworks/weave-gitops/pkg/api/applications"
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
+	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/server"
+	"github.com/weaveworks/weave-gitops/pkg/services/app"
 )
 
 var log = logrus.New()
@@ -40,7 +46,13 @@ func main() {
 		log.Fatalf("could not create http client: %s", err)
 	}
 
-	if err := pb.RegisterApplicationsHandlerServer(context.Background(), gMux, server.NewApplicationsServer(kubeClient)); err != nil {
+	gitClient := git.New(nil)
+	fluxClient := flux.New(&runner.CLIRunner{})
+	gitProviderClient := gitproviders.New()
+	logger := logger.New(os.Stdout)
+	appSvc := app.New(logger, gitClient, fluxClient, kubeClient, gitProviderClient)
+
+	if err := pb.RegisterApplicationsHandlerServer(context.Background(), gMux, server.NewApplicationsServer(appSvc)); err != nil {
 		log.Fatalf("could not register application: %s", err)
 	}
 

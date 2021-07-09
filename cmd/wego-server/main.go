@@ -12,9 +12,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	pb "github.com/weaveworks/weave-gitops/pkg/api/applications"
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
+	"github.com/weaveworks/weave-gitops/pkg/logger"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/server"
+	"github.com/weaveworks/weave-gitops/pkg/services/app"
 )
 
 func init() {
@@ -61,7 +66,18 @@ func StartServer() error {
 func RunInProcessGateway(ctx context.Context, addr string, opts ...runtime.ServeMuxOption) error {
 	mux := runtime.NewServeMux(opts...)
 
-	if err := pb.RegisterApplicationsHandlerServer(ctx, mux, server.NewApplicationsServer(kube.New(&runner.CLIRunner{}))); err != nil {
+	kubeClient, err := kube.NewKubeHTTPClient()
+	if err != nil {
+		log.Fatalf("could not create http client: %s", err)
+	}
+
+	gitClient := git.New(nil)
+	fluxClient := flux.New(&runner.CLIRunner{})
+	gitProviderClient := gitproviders.New()
+	logger := logger.New(os.Stdout)
+	appSvc := app.New(logger, gitClient, fluxClient, kubeClient, gitProviderClient)
+
+	if err := pb.RegisterApplicationsHandlerServer(ctx, mux, server.NewApplicationsServer(appSvc)); err != nil {
 		return fmt.Errorf("could not register application: %w", err)
 	}
 	s := &http.Server{
