@@ -110,7 +110,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 	utils.SetCommmitMessageFromArgs("wego app add", params.Url, params.Path, params.Name)
 
-	if err := appService.Add(params); err != nil {
+	if err := appService.Add(context.Background(), params); err != nil {
 		return errors.Wrapf(err, "failed to add the app %s", params.Name)
 	}
 
