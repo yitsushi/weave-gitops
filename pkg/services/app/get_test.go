@@ -17,7 +17,7 @@ var _ = Describe("Get", func() {
 			}, nil
 		}
 
-		a, err := appSrv.Get(types.NamespacedName{Name: defaultParams.Name, Namespace: defaultParams.Namespace})
+		a, err := appSrv.Get(ctx, types.NamespacedName{Name: defaultParams.Name, Namespace: defaultParams.Namespace})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		Expect(a.Spec.Path).To(Equal("bar"))
