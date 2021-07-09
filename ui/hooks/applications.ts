@@ -1,6 +1,9 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../contexts/AppContext";
-import { Application } from "../lib/api/applications/applications.pb";
+import {
+  AddApplicationRequest,
+  Application,
+} from "../lib/api/applications/applications.pb";
 
 const WeGONamespace = "wego-system";
 
@@ -31,9 +34,20 @@ export default function useApplications() {
       .finally(() => setLoading(false));
   };
 
+  const addApplication = (params: AddApplicationRequest) => {
+    setLoading(true);
+
+    return applicationsClient
+      .AddApplication(params)
+      .then((res) => res.application)
+      .catch((err) => doAsyncError("Error adding application", err.message))
+      .finally(() => setLoading(false));
+  };
+
   return {
     loading,
     applications,
     getApplication,
+    addApplication,
   };
 }
