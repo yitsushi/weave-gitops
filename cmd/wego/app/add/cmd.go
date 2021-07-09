@@ -4,6 +4,7 @@ package add
 // wego installed, the user will be prompted to install wego and then the repository will be added.
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 )
 
 var params app.AddParams
+var deploymentTypeArg string
 
 var Cmd = &cobra.Command{
 	Use:   "add [--name <name>] [--url <url>] [--branch <branch>] [--path <path within repository>] [--private-key <keyfile>] <repository directory>",
@@ -47,12 +49,22 @@ func init() {
 	Cmd.Flags().StringVar(&params.Url, "url", "", "URL of remote repository")
 	Cmd.Flags().StringVar(&params.Path, "path", "./", "Path of files within git repository")
 	Cmd.Flags().StringVar(&params.Branch, "branch", "main", "Branch to watch within git repository")
-	Cmd.Flags().StringVar(&params.DeploymentType, "deployment-type", "kustomize", "deployment type [kustomize, helm]")
+	Cmd.Flags().StringVar(&deploymentTypeArg, "deployment-type", "kustomize", "deployment type [kustomize, helm]")
 	Cmd.Flags().StringVar(&params.Chart, "chart", "", "Specify chart for helm source")
 	Cmd.Flags().StringVar(&params.PrivateKey, "private-key", "", "Private key to access git repository over ssh")
 	Cmd.Flags().StringVar(&params.AppConfigUrl, "app-config-url", "", "URL of external repository (if any) which will hold automation manifests; NONE to store only in the cluster")
 	Cmd.Flags().BoolVar(&params.DryRun, "dry-run", false, "If set, 'wego add' will not make any changes to the system; it will just display the actions that would have been taken")
 	Cmd.Flags().BoolVar(&params.AutoMerge, "auto-merge", false, "If set, 'wego add' will merge automatically into the set --branch")
+}
+
+func argToDeployType(arg string) (app.DeploymentType, error) {
+	c := app.DeploymentType(arg)
+	switch c {
+	case app.DeployTypeKustomize:
+		return app.DeployTypeKustomize, nil
+	}
+
+	return "", errors.New("invalid deployment type")
 }
 
 func runCmd(cmd *cobra.Command, args []string) error {
@@ -70,6 +82,13 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 		params.Dir = path
 	}
+
+	deployType, err := argToDeployType(deploymentTypeArg)
+	if err != nil {
+		return err
+	}
+
+	params.DeploymentType = deployType
 
 	if strings.HasPrefix(params.PrivateKey, "~/") {
 		dir, err := getHomeDir()

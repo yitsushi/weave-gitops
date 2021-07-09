@@ -45,9 +45,9 @@ type AddParams struct {
 	Path           string
 	Branch         string
 	PrivateKey     string
-	DeploymentType string
+	DeploymentType DeploymentType
 	Chart          string
-	SourceType     string
+	SourceType     SourceType
 	AppConfigUrl   string
 	Namespace      string
 	DryRun         bool
@@ -144,11 +144,11 @@ func (a *App) printAddSummary(params AddParams) {
 }
 
 func (a *App) updateParametersIfNecessary(params AddParams) (AddParams, error) {
-	params.SourceType = string(SourceTypeGit)
+	params.SourceType = SourceTypeGit
 
 	if params.Chart != "" {
-		params.SourceType = string(SourceTypeHelm)
-		params.DeploymentType = string(DeployTypeHelm)
+		params.SourceType = SourceTypeHelm
+		params.DeploymentType = DeployTypeHelm
 		params.Name = params.Chart
 
 		return params, nil
@@ -494,13 +494,13 @@ func (a *App) generateSource(params AddParams, secretRef string) ([]byte, error)
 
 func (a *App) generateApplicationGoat(params AddParams) ([]byte, error) {
 	switch params.DeploymentType {
-	case string(DeployTypeKustomize):
+	case DeployTypeKustomize:
 		return a.flux.CreateKustomization(params.Name, params.Name, params.Path, params.Namespace)
-	case string(DeployTypeHelm):
+	case DeployTypeHelm:
 		switch params.SourceType {
-		case string(SourceTypeHelm):
+		case SourceTypeHelm:
 			return a.flux.CreateHelmReleaseHelmRepository(params.Name, params.Chart, params.Namespace)
-		case string(SourceTypeGit):
+		case SourceTypeGit:
 			return a.flux.CreateHelmReleaseGitRepository(params.Name, params.Name, params.Path, params.Namespace)
 		default:
 			return nil, fmt.Errorf("invalid source type: %v", params.SourceType)
