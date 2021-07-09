@@ -90,8 +90,7 @@ type AddParams struct {
 //   directory within user repo
 // - PR created or commit directly pushed for user repo
 
-func (a *App) Add(params AddParams) error {
-	ctx := context.Background()
+func (a *App) Add(ctx context.Context, params AddParams) error {
 	params, err := a.updateParametersIfNecessary(params)
 	if err != nil {
 		return errors.Wrap(err, "could not update parameters")
