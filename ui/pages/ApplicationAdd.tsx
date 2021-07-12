@@ -19,20 +19,21 @@ type Props = {
 function ApplicationAdd({ className }: Props) {
   const { addApplication, loading } = useApplications();
   const [formState, setFormState] = React.useState<AddApplicationRequest>({
-    name: "",
-    namespace: "",
-    url: "",
-    path: "",
-    branch: "",
-    deploymentType: AddApplicationRequestDeploymentType.KUSTOMIZE,
+    name: "my-app",
+    namespace: "wego-system",
+    url: "ssh://git@github.com/jpellizzari/stringly",
+    path: "k8s/base/apps",
+    branch: "main",
+    deploymentType: AddApplicationRequestDeploymentType.kustomize,
     chart: "",
-    sourceType: AddApplicationRequestSourceType.GIT,
+    sourceType: AddApplicationRequestSourceType.git,
     appConfigUrl: "",
     dryRun: false,
     autoMerge: false,
   });
 
   const submit = () => {
+    console.log(formState);
     addApplication(formState);
   };
 
@@ -53,6 +54,26 @@ function ApplicationAdd({ className }: Props) {
           }}
           name="name"
           value={formState.name}
+        />
+        <Input
+          onChange={(ev: React.FormEvent<HTMLInputElement>) => {
+            setFormState({
+              ...formState,
+              namespace: ev.currentTarget.value,
+            });
+          }}
+          name="name"
+          value={formState.namespace}
+        />
+        <Input
+          onChange={(ev: React.FormEvent<HTMLInputElement>) => {
+            setFormState({
+              ...formState,
+              url: ev.currentTarget.value,
+            });
+          }}
+          name="name"
+          value={formState.url}
         />
         <Button type="submit">
           {loading ? <CircularProgress /> : "Submit"}
