@@ -72,6 +72,7 @@ func (s *server) AddApplication(ctx context.Context, msg *pb.AddApplicationReque
 	}
 
 	if err := s.apps.Add(ctx, addParams); err != nil {
+		fmt.Println(err)
 		return nil, fmt.Errorf("could not add app: %w", err)
 	}
 
