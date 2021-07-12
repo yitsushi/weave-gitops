@@ -10,7 +10,6 @@ import (
 	"github.com/weaveworks/weave-gitops/cmd/wego/flux"
 	"github.com/weaveworks/weave-gitops/cmd/wego/gitops"
 	"github.com/weaveworks/weave-gitops/cmd/wego/version"
-	fluxBin "github.com/weaveworks/weave-gitops/pkg/flux"
 )
 
 var options struct {
@@ -35,7 +34,6 @@ func configureLogger() {
 }
 
 func main() {
-	fluxBin.SetupFluxBin()
 	rootCmd.PersistentFlags().BoolVarP(&options.verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("namespace", "wego-system", "gitops runtime namespace")
 

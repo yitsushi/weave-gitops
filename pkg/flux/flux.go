@@ -29,6 +29,7 @@ type FluxClient struct {
 }
 
 func New(cliRunner runner.Runner) *FluxClient {
+	SetupFluxBin()
 	return &FluxClient{
 		runner: cliRunner,
 	}
