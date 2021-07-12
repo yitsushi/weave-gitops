@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -174,7 +175,20 @@ func (c *KubeHTTP) GetApplications(ctx context.Context, namespace string) ([]weg
 }
 
 func (c *KubeHTTP) LabelExistsInCluster(ctx context.Context, label string) error {
-	return errors.New("LabelExistsInCluster is not implemented for kubeHTTP")
+	selector, err := labels.Parse(fmt.Sprintf("%s=%s", wego.WeGOAppIdentifierLabelKey, label))
+	if err != nil {
+		return fmt.Errorf("could not create selector: %s", err)
+	}
+	listOpts := client.ListOptions{LabelSelector: selector}
+	if err := c.Client.List(ctx, &wego.ApplicationList{}, &listOpts); err != nil {
+		if apierrors.IsNotFound(err) {
+			return errors.New("label does not exist")
+		}
+
+		return fmt.Errorf("could not get applications by label: %w", err)
+	}
+
+	return nil
 }
 
 func initialContexts(cfgLoadingRules *clientcmd.ClientConfigLoadingRules) (contexts []string, currentCtx string, err error) {

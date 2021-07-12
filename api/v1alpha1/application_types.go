@@ -24,6 +24,8 @@ import (
 
 const ApplicationKind = "Application"
 
+const WeGOAppIdentifierLabelKey = "weave-gitops.weave.works/app-identifier"
+
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
 	// URL is the address of the git repository for this application
