@@ -554,7 +554,7 @@ var _ = Describe("Add", func() {
 				hash, err := utils.GetAppHash(repo, params.Path, params.Branch)
 				Expect(err).To(BeNil())
 
-				desired2.ObjectMeta.Labels = map[string]string{WeGOAppIdentifierLabelKey: hash}
+				desired2.ObjectMeta.Labels = map[string]string{wego.WeGOAppIdentifierLabelKey: hash}
 
 				out, err := generateAppYaml(params, repo)
 				Expect(err).To(BeNil())
