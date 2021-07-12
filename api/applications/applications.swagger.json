@@ -64,6 +64,16 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddApplicationRequest"
+            }
+          }
+        ],
         "tags": [
           "Applications"
         ]
@@ -111,18 +121,18 @@
     "AddApplicationRequestDeploymentType": {
       "type": "string",
       "enum": [
-        "KUSTOMIZE",
-        "HELM"
+        "kustomize",
+        "helm"
       ],
-      "default": "KUSTOMIZE"
+      "default": "kustomize"
     },
     "AddApplicationRequestSourceType": {
       "type": "string",
       "enum": [
-        "GIT",
-        "CHART"
+        "git",
+        "helm_repo"
       ],
-      "default": "GIT"
+      "default": "git"
     },
     "protobufAny": {
       "type": "object",
@@ -151,6 +161,44 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "v1AddApplicationRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "deploymentType": {
+          "$ref": "#/definitions/AddApplicationRequestDeploymentType"
+        },
+        "chart": {
+          "type": "string"
+        },
+        "sourceType": {
+          "$ref": "#/definitions/AddApplicationRequestSourceType"
+        },
+        "appConfigUrl": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "dryRun": {
+          "type": "boolean"
+        },
+        "autoMerge": {
+          "type": "boolean"
         }
       }
     },

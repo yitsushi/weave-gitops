@@ -7,13 +7,13 @@
 import * as fm from "./fetch.pb"
 
 export enum AddApplicationRequestDeploymentType {
-  KUSTOMIZE = "KUSTOMIZE",
-  HELM = "HELM",
+  kustomize = "kustomize",
+  helm = "helm",
 }
 
 export enum AddApplicationRequestSourceType {
-  GIT = "GIT",
-  CHART = "CHART",
+  git = "git",
+  helm_repo = "helm_repo",
 }
 
 export type Application = {
@@ -65,6 +65,6 @@ export class Applications {
     return fm.fetchReq<GetApplicationRequest, GetApplicationResponse>(`/v1/applications/${req["name"]}?${fm.renderURLSearchParams(req, ["name"])}`, {...initReq, method: "GET"})
   }
   static AddApplication(req: AddApplicationRequest, initReq?: fm.InitReq): Promise<AddApplicationResponse> {
-    return fm.fetchReq<AddApplicationRequest, AddApplicationResponse>(`/v1/applications`, {...initReq, method: "POST"})
+    return fm.fetchReq<AddApplicationRequest, AddApplicationResponse>(`/v1/applications`, {...initReq, method: "POST", body: JSON.stringify(req)})
   }
 }

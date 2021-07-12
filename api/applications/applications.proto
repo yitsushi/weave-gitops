@@ -43,6 +43,7 @@ service Applications {
     rpc AddApplication(AddApplicationRequest) returns (AddApplicationResponse) {
         option (google.api.http) = {
             post : "/v1/applications"
+            body: "*"
         };
     }
 }
@@ -76,14 +77,14 @@ message AddApplicationRequest {
     string path   = 3;
     string branch = 4;
     enum DeploymentType {
-        KUSTOMIZE = 0;
-        HELM      = 1;
+        kustomize = 0;
+        helm      = 1;
     }
     DeploymentType deployment_type = 5;
     string         chart           = 6;
     enum SourceType {
-        GIT   = 0;
-        CHART = 1;
+        git   = 0;
+        helm_repo = 1;
     }
     SourceType source_type    = 7;
     string     app_config_url = 8;
