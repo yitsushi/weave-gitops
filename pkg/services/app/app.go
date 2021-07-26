@@ -9,6 +9,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -34,6 +35,7 @@ type AppService interface {
 }
 
 type App struct {
+	osys               osys.Osys
 	git                git.Git
 	flux               flux.Flux
 	kube               kube.Kube
@@ -41,12 +43,13 @@ type App struct {
 	gitProviderFactory func(token string) (gitproviders.GitProvider, error)
 }
 
-func New(logger logger.Logger, git git.Git, flux flux.Flux, kube kube.Kube) *App {
+func New(logger logger.Logger, git git.Git, flux flux.Flux, kube kube.Kube, osys osys.Osys) *App {
 	return &App{
 		git:                git,
 		flux:               flux,
 		kube:               kube,
 		logger:             logger,
+		osys:               osys,
 		gitProviderFactory: createGitProvider,
 	}
 }

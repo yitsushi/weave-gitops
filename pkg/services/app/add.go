@@ -31,6 +31,11 @@ type AppResourceInfo struct {
 	targetName  string
 }
 
+type ResourceRef struct {
+	kind string
+	name string
+}
+
 const (
 	ConfigTypeUserRepo ConfigType = ""
 	ConfigTypeNone     ConfigType = "NONE"
@@ -383,7 +388,7 @@ func (a *App) generateAppManifests(info *AppResourceInfo, secretRef string, appH
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("could not create GitOps automation for '%s': %w", info.Name, err)
 	}
-
+	fmt.Printf("AGM: %s\n", appGoatManifest)
 	a.logger.Generatef("Generating Application spec manifest")
 	appManifest, err = generateAppYaml(info, appHash)
 	if err != nil {
@@ -525,6 +530,7 @@ func (a *App) generateSource(info *AppResourceInfo, secretRef string) ([]byte, e
 			return nil, fmt.Errorf("could not create git source: %w", err)
 		}
 
+		fmt.Printf("GS: %s\n", sourceManifest)
 		return sourceManifest, nil
 	case SourceTypeHelm:
 		return a.flux.CreateSourceHelm(info.Name, info.Spec.URL, info.Namespace)
@@ -745,6 +751,18 @@ func (a *AppResourceInfo) automationRoot() string {
 	return root
 }
 
+func (a *AppResourceInfo) appSourceName() string {
+	return a.Name
+}
+
+func (a *AppResourceInfo) appDeployName() string {
+	return a.Name
+}
+
+func (a *AppResourceInfo) appResourceName() string {
+	return a.Name
+}
+
 func (a *AppResourceInfo) appYamlPath() string {
 	return filepath.Join(a.appYamlDir(), "app.yaml")
 }
@@ -770,6 +788,70 @@ func (a *AppResourceInfo) automationAppsDirKustomizationName() string {
 
 func (a *AppResourceInfo) automationTargetDirKustomizationName() string {
 	return fmt.Sprintf("%s-%s", a.targetName, a.Name)
+}
+
+func (a *AppResourceInfo) sourceKind() string {
+	result := "GitRepository"
+
+	if a.Spec.SourceType == "helm" {
+		result = "HelmRepository"
+	}
+
+	return result
+}
+
+func (a *AppResourceInfo) deployKind() string {
+	result := "Kustomization"
+
+	if a.Spec.DeploymentType == "helm" {
+		result = "HelmRelease"
+	}
+
+	return result
+}
+
+func (a *AppResourceInfo) clusterResources() []ResourceRef {
+	resources := []ResourceRef{}
+	// Application GOAT, common to all three modes
+	resources = append(
+		resources,
+		ResourceRef{kind: a.sourceKind(), name: a.appSourceName()},
+		ResourceRef{kind: a.deployKind(), name: a.appDeployName()},
+		ResourceRef{kind: "Application", name: a.appResourceName()})
+
+	// Secret for deploy key associated with app repository;
+	// common to all three modes when not using upstream Helm repository
+	if a.sourceKind() == "GitRepository" {
+		resources = append(
+			resources,
+			ResourceRef{kind: "Secret", name: a.appSecretName(a.Spec.URL)})
+	}
+
+	if strings.ToUpper(a.Spec.ConfigURL) == string(ConfigTypeNone) {
+		// Only app resources present in cluster; no resources to manage config
+		return resources
+	}
+
+	// App dir and target dir resources are common to app and external repo modes
+	resources = append(
+		resources,
+		// Kustomization for .wego/apps/<app-name> directory
+		ResourceRef{kind: "Kustomization", name: a.automationAppsDirKustomizationName()},
+		// Kustomization for .wego/targets/<cluster-name>/<app-name> directory
+		ResourceRef{kind: "Kustomization", name: a.automationTargetDirKustomizationName()})
+
+	// External repo adds a secret and source for the external repo
+	if a.Spec.ConfigURL != string(ConfigTypeUserRepo) && a.Spec.ConfigURL != a.Spec.URL {
+		// Config stored in external repo
+		resources = append(
+			resources,
+			// Secret for deploy key associated with config repository
+			ResourceRef{kind: "Secret", name: a.appSecretName(a.Spec.ConfigURL)},
+			// Source for config repository
+			ResourceRef{kind: "GitRepository", name: generateResourceName(a.Spec.ConfigURL)})
+	}
+
+	return resources
 }
 
 // NOTE: ready to save the targets automation in phase 2

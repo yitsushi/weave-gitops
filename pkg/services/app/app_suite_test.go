@@ -14,12 +14,14 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/kube/kubefakes"
 	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
 )
 
 var (
 	gitClient    *gitfakes.FakeGit
 	fluxClient   *fluxfakes.FakeFlux
 	kubeClient   *kubefakes.FakeKube
+	osysClient   *osys.OsysClient
 	gitProviders *gitprovidersfakes.FakeGitProvider
 
 	appSrv AppService
@@ -27,6 +29,7 @@ var (
 
 var _ = BeforeEach(func() {
 	gitClient = &gitfakes.FakeGit{}
+	osysClient = osys.New()
 	fluxClient = &fluxfakes.FakeFlux{}
 	kubeClient = &kubefakes.FakeKube{
 		GetClusterNameStub: func(ctx context.Context) (string, error) {
@@ -39,7 +42,7 @@ var _ = BeforeEach(func() {
 
 	gitProviders = &gitprovidersfakes.FakeGitProvider{}
 
-	appSrv = New(logger.New(os.Stderr), gitClient, fluxClient, kubeClient)
+	appSrv = New(logger.New(os.Stderr), gitClient, fluxClient, kubeClient, osysClient)
 
 	appSrv.(*App).gitProviderFactory = func(token string) (gitproviders.GitProvider, error) {
 		return gitProviders, nil

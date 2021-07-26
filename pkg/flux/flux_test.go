@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/runner/runnerfakes"
 )
 
@@ -20,7 +21,7 @@ var (
 var _ = BeforeEach(func() {
 	runner = &runnerfakes.FakeRunner{}
 
-	fluxClient = flux.New(runner)
+	fluxClient = flux.New(osys.New(), runner)
 })
 
 var _ = Describe("Install", func() {

@@ -3,10 +3,10 @@ package flux
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/version"
 )
@@ -28,11 +28,13 @@ type Flux interface {
 }
 
 type FluxClient struct {
+	osys   osys.Osys
 	runner runner.Runner
 }
 
-func New(cliRunner runner.Runner) *FluxClient {
+func New(osysClient osys.Osys, cliRunner runner.Runner) *FluxClient {
 	return &FluxClient{
+		osys:   osysClient,
 		runner: cliRunner,
 	}
 }
@@ -97,6 +99,7 @@ func (f *FluxClient) CreateSourceGit(name string, url string, branch string, sec
 		return out, fmt.Errorf("failed to create source git: %w", err)
 	}
 
+	fmt.Printf("SG: %s\n", out)
 	return out, nil
 }
 
@@ -134,6 +137,7 @@ func (f *FluxClient) CreateKustomization(name string, source string, path string
 		return out, fmt.Errorf("failed to create kustomization: %w", err)
 	}
 
+	fmt.Printf("K: %s\n", out)
 	return out, nil
 }
 
@@ -152,6 +156,7 @@ func (f *FluxClient) CreateHelmReleaseGitRepository(name string, source string, 
 		return out, fmt.Errorf("failed to create helm release git repo: %w", err)
 	}
 
+	fmt.Printf("HRGR: %s\n", out)
 	return out, nil
 }
 
@@ -245,7 +250,7 @@ func (f *FluxClient) runFluxCmdOutputStream(args ...string) ([]byte, error) {
 }
 
 func (f *FluxClient) fluxPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := f.osys.UserHomeDir()
 	if err != nil {
 		return "", errors.Wrap(err, "failed getting user home directory")
 	}
