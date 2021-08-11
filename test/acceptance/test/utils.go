@@ -405,10 +405,16 @@ func getRepoVisibility(org string, repo string) string {
 
 func setupSSHKey(sshKeyPath string) {
 	if _, err := os.Stat(sshKeyPath); os.IsNotExist(err) {
+
+		githubKey := os.Getenv("GITHUB_KEY")
+		if githubKey == "" {
+			panic(fmt.Errorf("GITHUB_KEY environment variable not set"))
+		}
+
 		command := exec.Command("sh", "-c", fmt.Sprintf(`
                             echo "%s" >> %s &&
                             chmod 0600 %s &&
-                            ls -la %s`, os.Getenv("GITHUB_KEY"), sshKeyPath, sshKeyPath, sshKeyPath))
+                            ls -la %s`, githubKey, sshKeyPath, sshKeyPath, sshKeyPath))
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(session).Should(gexec.Exit())
