@@ -144,3 +144,7 @@ crd:
 # Check go format
 check-format: 
 	if [ ! -z "$(FORMAT_LIST)" ] ; then echo invalid format at: ${FORMAT_LIST} && exit 1; fi
+
+unit-tests-docker: dependencies cmd/wego/ui/run/dist/index.html
+	docker build -f test.dockerfile . -t wego-test 
+	docker run -it wego-test
