@@ -10,6 +10,19 @@ import (
 )
 
 type FakeOsys struct {
+	AuthMethodFromPrivateKeyStub        func([]byte) (ssh.AuthMethod, error)
+	authMethodFromPrivateKeyMutex       sync.RWMutex
+	authMethodFromPrivateKeyArgsForCall []struct {
+		arg1 []byte
+	}
+	authMethodFromPrivateKeyReturns struct {
+		result1 ssh.AuthMethod
+		result2 error
+	}
+	authMethodFromPrivateKeyReturnsOnCall map[int]struct {
+		result1 ssh.AuthMethod
+		result2 error
+	}
 	ExitStub        func(int)
 	exitMutex       sync.RWMutex
 	exitArgsForCall []struct {
@@ -120,6 +133,75 @@ type FakeOsys struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKey(arg1 []byte) (ssh.AuthMethod, error) {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.authMethodFromPrivateKeyMutex.Lock()
+	ret, specificReturn := fake.authMethodFromPrivateKeyReturnsOnCall[len(fake.authMethodFromPrivateKeyArgsForCall)]
+	fake.authMethodFromPrivateKeyArgsForCall = append(fake.authMethodFromPrivateKeyArgsForCall, struct {
+		arg1 []byte
+	}{arg1Copy})
+	stub := fake.AuthMethodFromPrivateKeyStub
+	fakeReturns := fake.authMethodFromPrivateKeyReturns
+	fake.recordInvocation("AuthMethodFromPrivateKey", []interface{}{arg1Copy})
+	fake.authMethodFromPrivateKeyMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKeyCallCount() int {
+	fake.authMethodFromPrivateKeyMutex.RLock()
+	defer fake.authMethodFromPrivateKeyMutex.RUnlock()
+	return len(fake.authMethodFromPrivateKeyArgsForCall)
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKeyCalls(stub func([]byte) (ssh.AuthMethod, error)) {
+	fake.authMethodFromPrivateKeyMutex.Lock()
+	defer fake.authMethodFromPrivateKeyMutex.Unlock()
+	fake.AuthMethodFromPrivateKeyStub = stub
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKeyArgsForCall(i int) []byte {
+	fake.authMethodFromPrivateKeyMutex.RLock()
+	defer fake.authMethodFromPrivateKeyMutex.RUnlock()
+	argsForCall := fake.authMethodFromPrivateKeyArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKeyReturns(result1 ssh.AuthMethod, result2 error) {
+	fake.authMethodFromPrivateKeyMutex.Lock()
+	defer fake.authMethodFromPrivateKeyMutex.Unlock()
+	fake.AuthMethodFromPrivateKeyStub = nil
+	fake.authMethodFromPrivateKeyReturns = struct {
+		result1 ssh.AuthMethod
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeOsys) AuthMethodFromPrivateKeyReturnsOnCall(i int, result1 ssh.AuthMethod, result2 error) {
+	fake.authMethodFromPrivateKeyMutex.Lock()
+	defer fake.authMethodFromPrivateKeyMutex.Unlock()
+	fake.AuthMethodFromPrivateKeyStub = nil
+	if fake.authMethodFromPrivateKeyReturnsOnCall == nil {
+		fake.authMethodFromPrivateKeyReturnsOnCall = make(map[int]struct {
+			result1 ssh.AuthMethod
+			result2 error
+		})
+	}
+	fake.authMethodFromPrivateKeyReturnsOnCall[i] = struct {
+		result1 ssh.AuthMethod
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeOsys) Exit(arg1 int) {
@@ -679,6 +761,8 @@ func (fake *FakeOsys) UserHomeDirReturnsOnCall(i int, result1 string, result2 er
 func (fake *FakeOsys) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.authMethodFromPrivateKeyMutex.RLock()
+	defer fake.authMethodFromPrivateKeyMutex.RUnlock()
 	fake.exitMutex.RLock()
 	defer fake.exitMutex.RUnlock()
 	fake.getGitProviderTokenMutex.RLock()
