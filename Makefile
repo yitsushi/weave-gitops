@@ -95,8 +95,10 @@ ui: node_modules cmd/wego/ui/run/dist/main.js
 
 ui-lib: node_modules dist/index.js dist/index.d.ts
 # Remove font files from the npm module.
-	@find dist -type f -iname \*.otf -delete
-	@find dist -type f -iname \*.woff -delete
+	find dist -type f -iname \*.otf -delete
+	find dist -type f -iname \*.woff -delete
+	cp package.json dist/package.json
+	cp package-lock.json dist/package-lock.json
 
 dist/index.js:
 	npm run build:lib && cp package.json dist
