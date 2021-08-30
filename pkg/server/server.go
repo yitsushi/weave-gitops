@@ -21,10 +21,15 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/utils"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/kustomize/kstatus/status"
 )
 
 type key int
@@ -34,15 +39,17 @@ const tokenKey key = iota
 type applicationServer struct {
 	pb.UnimplementedApplicationsServer
 
-	log logr.Logger
-	app *app.App
+	log  logr.Logger
+	app  *app.App
+	kube client.Client
 }
 
-// An ApplicationConfig allows for the customization of an ApplicationsServer.
+// An ApplicationsConfig allows for the customization of an ApplicationsServer.
 // Use the DefaultConfig() to use the default dependencies.
-type ApplicationConfig struct {
-	Logger logr.Logger
-	App    *app.App
+type ApplicationsConfig struct {
+	Logger     logr.Logger
+	App        *app.App
+	KubeClient client.Client
 }
 
 //Remove when middleware is done
@@ -51,37 +58,39 @@ type contextVals struct {
 }
 
 // NewApplicationsServer creates a grpc Applications server
-func NewApplicationsServer(cfg *ApplicationConfig) pb.ApplicationsServer {
+func NewApplicationsServer(cfg *ApplicationsConfig) pb.ApplicationsServer {
 	return &applicationServer{
-		log: cfg.Logger,
-		app: cfg.App,
+		log:  cfg.Logger,
+		app:  cfg.App,
+		kube: cfg.KubeClient,
 	}
 }
 
 // DefaultConfig creates a populated config with the dependencies for a Server
-func DefaultConfig() (*ApplicationConfig, error) {
+func DefaultConfig() (*ApplicationsConfig, error) {
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("could not create zap logger: %v", err)
 	}
 	logr := zapr.NewLogger(zapLog)
 
-	kubeClient, _, err := kube.NewKubeHTTPClient()
+	kubeClient, rawClient, err := kube.NewKubeHTTPClient()
 	if err != nil {
 		return nil, fmt.Errorf("could not create kube http client: %w", err)
 	}
 
 	appSrv := app.New(nil, nil, nil, kubeClient, nil)
 
-	return &ApplicationConfig{
-		Logger: logr,
-		App:    appSrv,
+	return &ApplicationsConfig{
+		Logger:     logr,
+		App:        appSrv,
+		KubeClient: rawClient,
 	}, nil
 }
 
 // NewApplicationsHandler allow for other applications to embed the Weave GitOps HTTP API.
 // This handler can be muxed with other services or used as a standalone service.
-func NewApplicationsHandler(ctx context.Context, cfg *ApplicationConfig, opts ...runtime.ServeMuxOption) (http.Handler, error) {
+func NewApplicationsHandler(ctx context.Context, cfg *ApplicationsConfig, opts ...runtime.ServeMuxOption) (http.Handler, error) {
 	appsSrv := NewApplicationsServer(cfg)
 
 	mux := runtime.NewServeMux(middleware.WithGrpcErrorLogging(cfg.Logger))
@@ -161,11 +170,13 @@ func (s *applicationServer) GetApplication(ctx context.Context, msg *pb.GetAppli
 
 	var deploymentK8sConditions []metav1.Condition
 	var deploymentConditions []*pb.Condition
+	reconciledKinds := []*pb.GroupVersionKind{}
 	if deployment != nil {
 		// Same as a src. Deployment may not be created at this point.
 		switch at := deployment.(type) {
 		case *kustomizev1.Kustomization:
 			deploymentK8sConditions = at.Status.Conditions
+			reconciledKinds = addReconciledKinds(reconciledKinds, at)
 		case *helmv2.HelmRelease:
 			deploymentK8sConditions = at.Status.Conditions
 		}
@@ -174,11 +185,13 @@ func (s *applicationServer) GetApplication(ctx context.Context, msg *pb.GetAppli
 	}
 
 	return &pb.GetApplicationResponse{Application: &pb.Application{
-		Name:                 app.Name,
-		Url:                  app.Spec.URL,
-		Path:                 app.Spec.Path,
-		SourceConditions:     srcConditions,
-		DeploymentConditions: deploymentConditions,
+		Name:                  app.Name,
+		Namespace:             app.Namespace,
+		Url:                   app.Spec.URL,
+		Path:                  app.Spec.Path,
+		SourceConditions:      srcConditions,
+		DeploymentConditions:  deploymentConditions,
+		ReconciledObjectKinds: reconciledKinds,
 	}}, nil
 }
 
@@ -251,6 +264,109 @@ func (s *applicationServer) ListCommits(ctx context.Context, msg *pb.ListCommits
 	}, nil
 }
 
+const KustomizeNameKey string = "kustomize.toolkit.fluxcd.io/name"
+const KustomizeNamespaceKey string = "kustomize.toolkit.fluxcd.io/namespace"
+
+func (s *applicationServer) GetReconciledObjects(ctx context.Context, msg *pb.GetReconciledObjectsReq) (*pb.GetReconciledObjectsRes, error) {
+	if msg.AutomationKind == pb.GetReconciledObjectsReq_Helm {
+		return nil, grpcStatus.Error(codes.Unimplemented, "Helm is not currently supported for this method")
+	}
+	result := []unstructured.Unstructured{}
+
+	for _, gvk := range msg.Kinds {
+		list := unstructured.UnstructuredList{}
+
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   gvk.Group,
+			Kind:    gvk.Kind,
+			Version: gvk.Version,
+		})
+
+		opts := client.MatchingLabels{
+			KustomizeNameKey:      msg.AutomationName,
+			KustomizeNamespaceKey: msg.AutomationNamespace,
+		}
+
+		if err := s.kube.List(ctx, &list, opts); err != nil {
+			return nil, fmt.Errorf("could not get unstructured list: %s\n", err)
+		}
+
+		result = append(result, list.Items...)
+
+	}
+
+	objects := []*pb.UnstructuredObject{}
+	for _, obj := range result {
+		res, err := status.Compute(&obj)
+
+		if err != nil {
+			return nil, fmt.Errorf("could not get status for %s: %w", obj.GetName(), err)
+		}
+
+		objects = append(objects, &pb.UnstructuredObject{
+			GroupVersionKind: &pb.GroupVersionKind{
+				Group:   obj.GetObjectKind().GroupVersionKind().Group,
+				Version: obj.GetObjectKind().GroupVersionKind().GroupVersion().Version,
+				Kind:    obj.GetKind(),
+			},
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+			Status:    res.Status.String(),
+			Uid:       string(obj.GetUID()),
+		})
+	}
+	return &pb.GetReconciledObjectsRes{Objects: objects}, nil
+}
+
+func (s *applicationServer) GetChildObjects(ctx context.Context, msg *pb.GetChildObjectsReq) (*pb.GetChildObjectsRes, error) {
+	list := unstructured.UnstructuredList{}
+
+	list.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   msg.GroupVersionKind.Group,
+		Version: msg.GroupVersionKind.Version,
+		Kind:    msg.GroupVersionKind.Kind,
+	})
+
+	if err := s.kube.List(ctx, &list); err != nil {
+		return nil, fmt.Errorf("could not get unstructured object: %s\n", err)
+	}
+
+	objects := []*pb.UnstructuredObject{}
+
+Items:
+	for _, obj := range list.Items {
+
+		refs := obj.GetOwnerReferences()
+
+		for _, ref := range refs {
+			if ref.UID != types.UID(msg.ParentUid) {
+				// This is not the child we are looking for.
+				// Skip the rest of the operations in Items loops.
+				// The is effectively an early return.
+				continue Items
+			}
+		}
+
+		statusResult, err := status.Compute(&obj)
+		if err != nil {
+			return nil, fmt.Errorf("could not get status for %s: %w", obj.GetName(), err)
+		}
+		objects = append(objects, &pb.UnstructuredObject{
+			GroupVersionKind: &pb.GroupVersionKind{
+				Group:   obj.GetObjectKind().GroupVersionKind().Group,
+				Version: obj.GetObjectKind().GroupVersionKind().GroupVersion().Version,
+				Kind:    obj.GetKind(),
+			},
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+			Status:    statusResult.Status.String(),
+			Uid:       string(obj.GetUID()),
+		})
+	}
+
+	return &pb.GetChildObjectsRes{Objects: objects}, nil
+}
+
 // Returns k8s objects that can be used to find the cluster objects.
 // The first return argument is the source, the second is the deployment
 func findFluxObjects(app *wego.Application) (client.Object, client.Object, error) {
@@ -308,4 +424,40 @@ func mapConditions(conditions []metav1.Condition) []*pb.Condition {
 	}
 
 	return out
+}
+
+func addReconciledKinds(arr []*pb.GroupVersionKind, kustomization *kustomizev1.Kustomization) []*pb.GroupVersionKind {
+	if kustomization.Status.Snapshot == nil {
+		return arr
+	}
+
+	found := map[string]bool{}
+	for _, gvks := range kustomization.Status.Snapshot.NamespacedKinds() {
+		for _, gvk := range gvks {
+			s := gvk.String()
+
+			if _, exists := found[s]; !exists {
+				found[s] = true
+				arr = append(arr, &pb.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				})
+			}
+		}
+	}
+
+	for _, gvk := range kustomization.Status.Snapshot.NonNamespacedKinds() {
+		s := gvk.String()
+		if _, exists := found[s]; !exists {
+			found[s] = true
+			arr = append(arr, &pb.GroupVersionKind{
+				Group:   gvk.Group,
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+			})
+		}
+	}
+
+	return arr
 }

@@ -94,7 +94,13 @@ var _ = BeforeEach(func() {
 	s = grpc.NewServer()
 
 	k = &kube.KubeHTTP{Client: k8sClient, ClusterName: testClustername}
-	cfg := ApplicationConfig{App: app.New(nil, nil, nil, k, nil)}
+	cfg := ApplicationsConfig{
+		App: &app.App{
+			Kube:         k,
+			RawK8sClient: k8sClient,
+		},
+		KubeClient: k8sClient,
+	}
 
 	apps = NewApplicationsServer(&cfg)
 	pb.RegisterApplicationsServer(s, apps)

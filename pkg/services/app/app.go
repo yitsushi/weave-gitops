@@ -53,6 +53,7 @@ type App struct {
 	Git                git.Git
 	Flux               flux.Flux
 	Kube               kube.Kube
+	RawK8sClient       client.Client
 	Logger             logger.Logger
 	GitProviderFactory func(token string) (gitproviders.GitProvider, error)
 	// TODO: @jpellizzari adding this as a temporary stop-gap to maintain the current behavior for external config repos.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	"github.com/fluxcd/go-git-providers/gitprovider"
+	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta1"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1beta1"
 	"github.com/go-logr/logr"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	. "github.com/onsi/ginkgo"
@@ -26,6 +29,9 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/middleware"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 	fakelogr "github.com/weaveworks/weave-gitops/pkg/vendorfakes/logr"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -79,6 +85,163 @@ var _ = Describe("ApplicationsServer", func() {
 
 		Expect(res.Application.Name).To(Equal(name))
 	})
+	Describe("GetReconciledObjects", func() {
+		It("gets object with a kustomization + git repo configuration", func() {
+			ctx := context.Background()
+			name := "my-app"
+			kustomization := kustomizev1.Kustomization{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace.Name,
+				},
+				Spec: kustomizev1.KustomizationSpec{
+					SourceRef: kustomizev1.CrossNamespaceSourceReference{
+						Kind: sourcev1.GitRepositoryKind,
+					},
+				},
+				Status: kustomizev1.KustomizationStatus{
+					Snapshot: &kustomizev1.Snapshot{
+						Entries: []kustomizev1.SnapshotEntry{
+							{
+								Namespace: namespace.Name,
+								Kinds: map[string]string{
+									namespace.Name: "Deployment",
+								},
+							},
+						},
+					},
+				},
+			}
+			reconciledObj := appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-deployment",
+					Namespace: namespace.Name,
+					Labels: map[string]string{
+						KustomizeNameKey:      name,
+						KustomizeNamespaceKey: namespace.Name,
+					},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": name,
+						},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{"app": name},
+						},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{
+								Name:  "nginx",
+								Image: "nginx",
+							}},
+						},
+					},
+				},
+			}
+			app := &wego.Application{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace.Name,
+				},
+				Spec: wego.ApplicationSpec{
+					DeploymentType: wego.DeploymentTypeKustomize,
+				},
+			}
+			Expect(k8sClient.Create(ctx, &kustomization)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, &reconciledObj)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
+			res, err := appsClient.GetReconciledObjects(ctx, &pb.GetReconciledObjectsReq{
+				AutomationName:      name,
+				AutomationNamespace: namespace.Name,
+				AutomationKind:      pb.GetReconciledObjectsReq_Kustomize,
+				Kinds:               []*pb.GroupVersionKind{{Group: "apps", Version: "v1", Kind: "Deployment"}},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Objects).To(HaveLen(1))
+
+			first := res.Objects[0]
+			Expect(first.GroupVersionKind.Kind).To(Equal("Deployment"))
+			Expect(first.Name).To(Equal(reconciledObj.Name))
+		})
+		It("returns an error when helm is specified as an automation type", func() {
+			ctx := context.Background()
+			name := "my-app"
+			_, err := appsClient.GetReconciledObjects(ctx, &pb.GetReconciledObjectsReq{
+				AutomationName:      name,
+				AutomationNamespace: namespace.Name,
+				AutomationKind:      pb.GetReconciledObjectsReq_Helm,
+				Kinds:               []*pb.GroupVersionKind{{Group: "apps", Version: "v1", Kind: "Deployment"}},
+			})
+
+			s, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(s.Code()).To(Equal(codes.Unimplemented))
+		})
+	})
+	Describe("GetChildObjects", func() {
+		It("returns child objects for a parent", func() {
+			ctx := context.Background()
+			name := "my-app"
+			deployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-deployment",
+					Namespace: namespace.Name,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": name,
+						},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{"app": name},
+						},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{
+								Name:  "nginx",
+								Image: "nginx",
+							}},
+						},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, deployment)).Should(Succeed())
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, deployment))
+			Expect(deployment.UID).NotTo(Equal(""))
+			rs := &appsv1.ReplicaSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("%s-123abcd", name),
+					Namespace: namespace.Name,
+				},
+				Spec: appsv1.ReplicaSetSpec{
+					Template: deployment.Spec.Template,
+					Selector: deployment.Spec.Selector,
+				},
+			}
+			rs.SetOwnerReferences([]metav1.OwnerReference{{
+				UID:        deployment.UID,
+				APIVersion: deployment.APIVersion,
+				Kind:       deployment.Kind,
+				Name:       deployment.Name,
+			}})
+
+			Expect(k8sClient.Create(ctx, rs)).Should(Succeed())
+
+			res, err := appsClient.GetChildObjects(ctx, &pb.GetChildObjectsReq{
+				ParentUid:        string(deployment.UID),
+				GroupVersionKind: &pb.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res.Objects).To(HaveLen(1))
+
+			first := res.Objects[0]
+			Expect(first.GroupVersionKind.Kind).To(Equal("ReplicaSet"))
+			Expect(first.Name).To(Equal(rs.Name))
+		})
+	})
 
 	Describe("middleware", func() {
 		Describe("logging", func() {
@@ -92,7 +255,7 @@ var _ = Describe("ApplicationsServer", func() {
 			BeforeEach(func() {
 				log = makeFakeLogr()
 				kubeClient = &kubefakes.FakeKube{}
-				appsSrv = NewApplicationsServer(&ApplicationConfig{App: app.New(nil, nil, nil, kubeClient, nil)})
+				appsSrv = NewApplicationsServer(&ApplicationsConfig{App: app.New(nil, nil, nil, kubeClient, nil)})
 				mux = runtime.NewServeMux(middleware.WithGrpcErrorLogging(log))
 				httpHandler = middleware.WithLogging(log, mux)
 				err = pb.RegisterApplicationsHandlerServer(context.Background(), mux, appsSrv)
@@ -196,7 +359,7 @@ var _ = Describe("Applications handler", func() {
 			}}, nil
 		}
 
-		cfg := ApplicationConfig{
+		cfg := ApplicationsConfig{
 			App:    app.New(nil, nil, nil, k, nil),
 			Logger: log,
 		}
@@ -258,7 +421,7 @@ var _ = Describe("Applications handler", func() {
 			return gitProviders, nil
 		}
 
-		cfg := ApplicationConfig{
+		cfg := ApplicationsConfig{
 			Logger: log,
 			App:    appSrv,
 		}
