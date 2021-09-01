@@ -9,16 +9,14 @@ import (
 	"path/filepath"
 
 	wego "github.com/weaveworks/weave-gitops/api/v1alpha1"
-	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 type RemoveParams struct {
-	Name             string
-	Namespace        string
-	PrivateKey       string
-	DryRun           bool
-	GitProviderToken string
+	Name       string
+	Namespace  string
+	PrivateKey string
+	DryRun     bool
 }
 
 // Remove removes the Weave GitOps automation for an application
@@ -68,7 +66,7 @@ func (a *App) Remove(params RemoveParams) error {
 		return nil
 	}
 
-	cloneURL, branch, err := a.getConfigUrlAndBranch(info, params.GitProviderToken)
+	cloneURL, branch, err := a.getConfigUrlAndBranch(info)
 	if err != nil {
 		return fmt.Errorf("failed to obtain config URL and branch: %w", err)
 	}
@@ -109,22 +107,19 @@ func (a *App) Remove(params RemoveParams) error {
 	return nil
 }
 
-func (a *App) getConfigUrlAndBranch(info *AppResourceInfo, token string) (string, string, error) {
+func (a *App) getConfigUrlAndBranch(info *AppResourceInfo) (string, string, error) {
 	cloneURL := info.Spec.ConfigURL
 	branch := info.Spec.Branch
 
 	if cloneURL == string(ConfigTypeUserRepo) {
 		cloneURL = info.Spec.URL
 	} else {
-		gitProvider, err := a.GitProviderFactory(token, gitproviders.GitProviderGitHub)
+		defaultBranch, err := a.gitProvider.GetDefaultBranch(cloneURL)
 		if err != nil {
 			return "", "", err
 		}
 
-		branch, err = gitProvider.GetDefaultBranch(cloneURL)
-		if err != nil {
-			return "", "", err
-		}
+		branch = defaultBranch
 	}
 
 	return cloneURL, branch, nil

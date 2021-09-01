@@ -11,6 +11,10 @@ import (
 // GitProviderName holds a Git provider definition.
 type GitProviderName string
 
+func (g GitProviderName) ToString() string {
+	return string(g)
+}
+
 const (
 	GitProviderGitHub GitProviderName = "github"
 	GitProviderGitLab GitProviderName = "gitlab"

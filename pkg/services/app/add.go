@@ -61,21 +61,21 @@ const (
 )
 
 type AddParams struct {
-	Dir                        string
-	Name                       string
-	Url                        string
-	Path                       string
-	Branch                     string
-	PrivateKey                 string
-	DeploymentType             string
-	Chart                      string
-	SourceType                 wego.SourceType
-	AppConfigUrl               string
-	Namespace                  string
-	DryRun                     bool
-	AutoMerge                  bool
-	GitProviderToken           string
-	GitProviderName            gitproviders.GitProviderName
+	Dir            string
+	Name           string
+	Url            string
+	Path           string
+	Branch         string
+	PrivateKey     string
+	DeploymentType string
+	Chart          string
+	SourceType     wego.SourceType
+	AppConfigUrl   string
+	Namespace      string
+	DryRun         bool
+	AutoMerge      bool
+	//GitProviderToken           string
+	//GitProviderName            gitproviders.GitProviderName
 	HelmReleaseTargetNamespace string
 }
 
@@ -129,13 +129,7 @@ type externalRepoManifests struct {
 
 func (a *App) Add(params AddParams) error {
 	ctx := context.Background()
-
-	gitProvider, err := a.GitProviderFactory(params.GitProviderToken, params.GitProviderName)
-	if err != nil {
-		return err
-	}
-
-	params, err = a.updateParametersIfNecessary(gitProvider, params)
+	params, err := a.updateParametersIfNecessary(a.gitProvider, params)
 	if err != nil {
 		return fmt.Errorf("could not update parameters: %w", err)
 	}
@@ -176,7 +170,7 @@ func (a *App) Add(params AddParams) error {
 
 	var secretRef string
 	if wego.SourceType(params.SourceType) == wego.SourceTypeGit {
-		secretRef, err = a.createAndUploadDeployKey(ctx, info, params.DryRun, info.Spec.URL, gitProvider)
+		secretRef, err = a.createAndUploadDeployKey(ctx, info, params.DryRun, info.Spec.URL, a.gitProvider)
 		if err != nil {
 			return fmt.Errorf("could not generate deploy key: %w", err)
 		}
@@ -186,7 +180,7 @@ func (a *App) Add(params AddParams) error {
 	case string(ConfigTypeNone):
 		return a.addAppWithNoConfigRepo(info, params.DryRun, secretRef, appHash)
 	case string(ConfigTypeUserRepo):
-		return a.addAppWithConfigInAppRepo(info, params, gitProvider, secretRef, appHash)
+		return a.addAppWithConfigInAppRepo(info, params, a.gitProvider, secretRef, appHash)
 	default:
 		// TODO: @jpellizzari As of https://github.com/weaveworks/weave-gitops/pull/587,
 		// we are not using deploy keys for external repos yet.
@@ -197,7 +191,7 @@ func (a *App) Add(params AddParams) error {
 		}
 		// Overriding the internal git service
 		a.Git = gitClient
-		return a.addAppWithConfigInExternalRepo(ctx, info, params, gitProvider, secretRef, appHash)
+		return a.addAppWithConfigInExternalRepo(ctx, info, params, a.gitProvider, secretRef, appHash)
 	}
 }
 
@@ -361,7 +355,7 @@ func (a *App) addAppWithConfigInAppRepo(info *AppResourceInfo, params AddParams,
 
 	if !params.DryRun {
 		if !params.AutoMerge {
-			if err := a.createPullRequestToRepo(params.GitProviderName, info, gitProvider, info.Spec.URL, appHash, appSpec, appGoat, source); err != nil {
+			if err := a.createPullRequestToRepo(info, gitProvider, info.Spec.URL, appHash, appSpec, appGoat, source); err != nil {
 				return err
 			}
 		} else {
@@ -418,7 +412,7 @@ func (a *App) addAppWithConfigInExternalRepo(ctx context.Context, info *AppResou
 
 	if !params.DryRun {
 		if !params.AutoMerge {
-			if err := a.createPullRequestToRepo(params.GitProviderName, info, gitProvider, info.Spec.ConfigURL, appHash, appSpec, appGoat, appSource); err != nil {
+			if err := a.createPullRequestToRepo(info, gitProvider, info.Spec.ConfigURL, appHash, appSpec, appGoat, appSource); err != nil {
 				return err
 			}
 		} else {
@@ -743,7 +737,7 @@ func generateResourceName(url string) string {
 	return hashNameIfTooLong(strings.ReplaceAll(utils.UrlToRepoName(url), "_", "-"))
 }
 
-func (a *App) createPullRequestToRepo(providerName gitproviders.GitProviderName, info *AppResourceInfo, gitProvider gitproviders.GitProvider, repo string, appHash string, appYaml []byte, goatSource, goatDeploy []byte) error {
+func (a *App) createPullRequestToRepo(info *AppResourceInfo, gitProvider gitproviders.GitProvider, repo string, appHash string, appYaml []byte, goatSource, goatDeploy []byte) error {
 	repoName := generateResourceName(repo)
 
 	appPath := info.appYamlPath()
@@ -780,7 +774,7 @@ func (a *App) createPullRequestToRepo(providerName gitproviders.GitProviderName,
 	}
 
 	if accountType == gitproviders.AccountTypeOrg {
-		orgRepoRef := gitproviders.NewOrgRepositoryRef(string(providerName), owner, repoName)
+		orgRepoRef := gitproviders.NewOrgRepositoryRef(gitProvider.ProviderName().ToString(), owner, repoName)
 		prLink, err := gitProvider.CreatePullRequestToOrgRepo(orgRepoRef, info.Spec.Branch, appHash, files, utils.GetCommitMessage(), fmt.Sprintf("wego add %s", info.Name), fmt.Sprintf("Added yamls for %s", info.Name))
 		if err != nil {
 			return fmt.Errorf("unable to create pull request: %w", err)
@@ -789,7 +783,7 @@ func (a *App) createPullRequestToRepo(providerName gitproviders.GitProviderName,
 		return nil
 	}
 
-	userRepoRef := gitproviders.NewUserRepositoryRef(string(providerName), owner, repoName)
+	userRepoRef := gitproviders.NewUserRepositoryRef(gitProvider.ProviderName().ToString(), owner, repoName)
 	prLink, err := gitProvider.CreatePullRequestToUserRepo(userRepoRef, info.Spec.Branch, appHash, files, utils.GetCommitMessage(), fmt.Sprintf("wego add %s", info.Name), fmt.Sprintf("Added yamls for %s", info.Name))
 	if err != nil {
 		return fmt.Errorf("unable to create pull request: %w", err)

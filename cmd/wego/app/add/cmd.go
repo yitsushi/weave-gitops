@@ -114,6 +114,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	var normalizedUrl gitproviders.NormalizedRepoURL
+	gitProviderName := gitproviders.GitProviderGitHub
 	// We re-use the same --url flag for both git and helm sources.
 	// There isn't really a concept of "provider" in helm charts, and there is nothing to push.
 	// Assume charts are always public and no auth needs to be done.
@@ -122,19 +123,16 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("error creating normalized url: %w", err)
 		}
-		params.GitProviderName = normalizedUrl.Provider()
-	} else {
-		// helm doesnt use the gitprovider but it still needs to be set to something for now
-		params.GitProviderName = gitproviders.GitProviderGitHub
+		gitProviderName = normalizedUrl.Provider()
 	}
 
-	token, tokenErr := osysClient.GetGitProviderToken(params.GitProviderName)
+	token, tokenErr := osysClient.GetGitProviderToken(gitProviderName)
 
 	if !isHelmRepository && tokenErr == osys.ErrNoGitProviderTokenSet {
 		// No provider token set, we need to do the auth flow.
-		authHandler, err := auth.NewAuthCLIHandler(params.GitProviderName)
+		authHandler, err := auth.NewAuthCLIHandler(gitProviderName)
 		if err != nil {
-			return fmt.Errorf("could not get auth handler for provider %s: %w", params.GitProviderName, err)
+			return fmt.Errorf("could not get auth handler for provider %s: %w", gitProviderName, err)
 		}
 
 		token, err = authHandler(ctx, osysClient.Stdout())
@@ -146,8 +144,6 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not get access token: %w", tokenErr)
 	}
 
-	params.GitProviderToken = token
-
 	authMethod, err := osysClient.SelectAuthMethod(params.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("error selecting auth method: %w", err)
@@ -157,7 +153,7 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 	// If we are NOT doing a helm chart, we want to use a git client with an embedded deploy key
 	if !isHelmRepository {
-		authsvc, err := auth.NewAuthService(fluxClient, rawClient, params.GitProviderName, logger, params.GitProviderToken)
+		authsvc, err := auth.NewAuthService(fluxClient, rawClient, gitProviderName, logger, token)
 		if err != nil {
 			return fmt.Errorf("error creating auth service: %w", err)
 		}
@@ -178,8 +174,14 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 	}
 
-	appService := app.New(logger, gitClient, fluxClient, kubeClient, osysClient)
-
+	provider, err := gitproviders.New(gitproviders.Config{
+		Provider: gitProviderName,
+		Token:    token,
+	})
+	if err != nil {
+		return fmt.Errorf("failed initializing git provider: %w", err)
+	}
+	appService := app.New(logger, gitClient, provider, fluxClient, kubeClient, osysClient)
 	utils.SetCommmitMessageFromArgs("wego app add", params.Url, params.Path, params.Name)
 
 	if err := appService.Add(params); err != nil {

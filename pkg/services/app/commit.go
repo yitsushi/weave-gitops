@@ -24,12 +24,7 @@ func (a *App) GetCommits(params CommitParams, application *wego.Application) ([]
 		return nil, fmt.Errorf("error creating normalized url: %w", err)
 	}
 
-	gitProvider, err := a.GitProviderFactory(params.GitProviderToken, normalizedUrl.Provider())
-	if err != nil {
-		return nil, err
-	}
-
-	accountType, err := gitProvider.GetAccountType(normalizedUrl.Owner())
+	accountType, err := a.gitProvider.GetAccountType(normalizedUrl.Owner())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve account type: %w", err)
 	}
@@ -39,13 +34,13 @@ func (a *App) GetCommits(params CommitParams, application *wego.Application) ([]
 
 	if accountType == gitproviders.AccountTypeUser {
 		userRepoRef := gitproviders.NewUserRepositoryRef(github.DefaultDomain, normalizedUrl.Owner(), normalizedUrl.RepositoryName())
-		commits, err = gitProvider.GetCommitsFromUserRepo(userRepoRef, application.Spec.Branch, params.PageSize, params.PageToken)
+		commits, err = a.gitProvider.GetCommitsFromUserRepo(userRepoRef, application.Spec.Branch, params.PageSize, params.PageToken)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get Commits for user repo: %w", err)
 		}
 	} else {
 		orgRepoRef := gitproviders.NewOrgRepositoryRef(github.DefaultDomain, normalizedUrl.Owner(), normalizedUrl.RepositoryName())
-		commits, err = gitProvider.GetCommitsFromOrgRepo(orgRepoRef, application.Spec.Branch, params.PageSize, params.PageToken)
+		commits, err = a.gitProvider.GetCommitsFromOrgRepo(orgRepoRef, application.Spec.Branch, params.PageSize, params.PageToken)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get Commits for org repo: %w", err)
 		}

@@ -49,12 +49,12 @@ type AppService interface {
 }
 
 type App struct {
-	Osys               osys.Osys
-	Git                git.Git
-	Flux               flux.Flux
-	Kube               kube.Kube
-	Logger             logger.Logger
-	GitProviderFactory func(token string, providerName gitproviders.GitProviderName) (gitproviders.GitProvider, error)
+	Osys        osys.Osys
+	Git         git.Git
+	gitProvider gitproviders.GitProvider
+	Flux        flux.Flux
+	Kube        kube.Kube
+	Logger      logger.Logger
 	// TODO: @jpellizzari adding this as a temporary stop-gap to maintain the current behavior for external config repos.
 	// As of https://github.com/weaveworks/weave-gitops/pull/587,
 	// we are not addressing this case yet. Many of the unit tests check for exact function call
@@ -63,32 +63,20 @@ type App struct {
 	temporaryGitClientFactory func(osysClient osys.Osys, privKeypath string) (git.Git, error)
 }
 
-func New(logger logger.Logger, git git.Git, flux flux.Flux, kube kube.Kube, osys osys.Osys) *App {
+func New(logger logger.Logger, git git.Git, gitProvider gitproviders.GitProvider, flux flux.Flux, kube kube.Kube, osys osys.Osys) *App {
 	return &App{
 		Git:                       git,
+		gitProvider:               gitProvider,
 		Flux:                      flux,
 		Kube:                      kube,
 		Logger:                    logger,
 		Osys:                      osys,
-		GitProviderFactory:        createGitProvider,
 		temporaryGitClientFactory: temporaryCreateGitClient,
 	}
 }
 
 // Make sure App implements all the required methods.
 var _ AppService = &App{}
-
-func createGitProvider(token string, providerName gitproviders.GitProviderName) (gitproviders.GitProvider, error) {
-	provider, err := gitproviders.New(gitproviders.Config{
-		Provider: providerName,
-		Token:    token,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed initializing git provider: %w", err)
-	}
-
-	return provider, nil
-}
 
 func temporaryCreateGitClient(osysClient osys.Osys, privKeypath string) (git.Git, error) {
 	auth, err := osysClient.SelectAuthMethod(privKeypath)

@@ -57,7 +57,8 @@ func runCmd(cmd *cobra.Command, args []string) error {
 
 	osysClient := osys.New()
 
-	token, err := osysClient.GetGitProviderToken(gitproviders.GitProviderGitHub)
+	providerName := gitproviders.GitProviderGitHub
+	token, err := osysClient.GetGitProviderToken(providerName)
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,14 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	gitClient := git.New(authMethod, wrapper.NewGoGit())
 	logger := logger.NewCLILogger(os.Stdout)
 
-	appService := app.New(logger, gitClient, fluxClient, kubeClient, osysClient)
+	provider, err := gitproviders.New(gitproviders.Config{
+		Provider: providerName,
+		Token:    token,
+	})
+	if err != nil {
+		return fmt.Errorf("failed initializing git provider: %w", err)
+	}
+	appService := app.New(logger, gitClient, provider, fluxClient, kubeClient, osysClient)
 
 	utils.SetCommmitMessage(fmt.Sprintf("wego app remove %s", params.Name))
 

@@ -41,12 +41,11 @@ type GitProvider interface {
 	GetCommitsFromUserRepo(userRepRef gitprovider.UserRepositoryRef, targetBranch string, pageSize int, pageToken int) ([]gitprovider.Commit, error)
 	GetCommitsFromOrgRepo(orgRepRef gitprovider.OrgRepositoryRef, targetBranch string, pageSize int, pageToken int) ([]gitprovider.Commit, error)
 	GetAccountType(owner string) (ProviderAccountType, error)
+	ProviderName() GitProviderName
 }
 
-// making sure it implements the interface
-var _ GitProvider = defaultGitProvider{}
-
 type defaultGitProvider struct {
+	config   Config
 	provider gitprovider.Client
 }
 
@@ -57,8 +56,13 @@ func New(config Config) (GitProvider, error) {
 	}
 
 	return defaultGitProvider{
+		config:   config,
 		provider: provider,
 	}, nil
+}
+
+func (p defaultGitProvider) ProviderName() GitProviderName {
+	return p.config.Provider
 }
 
 func (p defaultGitProvider) RepositoryExists(name string, owner string) (bool, error) {
