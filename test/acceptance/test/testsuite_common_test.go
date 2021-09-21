@@ -4,7 +4,6 @@ package acceptance
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -44,23 +43,6 @@ func TestAcceptance(t *testing.T) {
 	RegisterFailHandler(Fail)
 	//gomega.RegisterFailHandler(GomegaFail)
 	RunSpecs(t, "Weave GitOps User Acceptance Tests")
-}
-
-func (g *GlobalParameters) ToJSONString() string {
-	bts, err := json.Marshal(g)
-	if err != nil {
-		panic(err)
-	}
-	return string(bts)
-}
-
-func FromJSONString(input []byte) GlobalParameters {
-	var g GlobalParameters
-	err := json.Unmarshal(input, &g)
-	if err != nil {
-		panic(err)
-	}
-	return g
 }
 
 var clusterPool2 *cluster.ClusterPool2
@@ -109,16 +91,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	}
 
-	gp := GlobalParameters{
-		ContextDB: dbDirectory,
-	}
+	return []byte(dbDirectory)
+}, func(dbDirectory []byte) {
 
-	return []byte(gp.ToJSONString())
-}, func(gParameters []byte) {
-
-	fmt.Println("Parameters", string(gParameters))
-
-	globalParameters = FromJSONString(gParameters)
+	fmt.Println("dbDirectory", string(dbDirectory))
 
 	contextDirectory = dbDirectory
 
@@ -179,7 +155,7 @@ var _ = SynchronizedAfterSuite(func() {
 				fmt.Println("error", err)
 			}
 		}
-		records := metrics.GetJSArray(globalParameters.ContextDB)
+		records := metrics.GetJSArray(contextDirectory)
 		fmt.Println("RECORDS", records)
 	}
 

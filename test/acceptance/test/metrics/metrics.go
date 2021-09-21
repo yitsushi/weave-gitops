@@ -78,9 +78,9 @@ func itob(v int) []byte {
 	return b
 }
 
-func GetJSArray(dbPath string) string {
+func GetJSArray(dbPath []byte) string {
 
-	db, err := bolt.Open(filepath.Join(dbPath, RECORDS_DB), 0755, &bolt.Options{})
+	db, err := bolt.Open(filepath.Join(string(dbPath), RECORDS_DB), 0755, &bolt.Options{})
 	if err != nil {
 		panic(fmt.Errorf("error opening db %s in get cluster %w", dbPath, err))
 	}
