@@ -33,7 +33,7 @@ const EVENTUALLY_DEFAULT_TIMEOUT time.Duration = 60 * time.Second
 const TIMEOUT_FIVE_MINUTES time.Duration = 5 * time.Minute
 const INSTALL_RESET_TIMEOUT time.Duration = 300 * time.Second
 const NAMESPACE_TERMINATE_TIMEOUT time.Duration = 600 * time.Second
-const INSTALL_PODS_READY_TIMEOUT time.Duration = 6 * time.Minute
+const INSTALL_PODS_READY_TIMEOUT time.Duration = 7 * time.Minute
 const WEGO_DEFAULT_NAMESPACE = wego.DefaultNamespace
 const WEGO_UI_URL = "http://localhost:9001"
 const SELENIUM_SERVICE_URL = "http://localhost:4444/wd/hub"
@@ -532,7 +532,7 @@ func runWegoAddCommandWithOutput(repoAbsolutePath string, addCommand string, weg
 	command.Env = append(command.Env, fmt.Sprintf("KUBECONFIG=%s", kubeConfigPath))
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ShouldNot(HaveOccurred())
-	Eventually(session).Should(gexec.Exit())
+	Eventually(session, 3*time.Minute).Should(gexec.Exit())
 	return string(session.Wait().Out.Contents()), string(session.Wait().Err.Contents())
 }
 

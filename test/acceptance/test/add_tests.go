@@ -48,12 +48,13 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	// Variables when running on CI
 	//var clusterName string
 
-	cont := 0
-
+	count := 0
+	var metricID string
 	BeforeEach(func() {
+		metricID = fmt.Sprintf("%d%d", config.GinkgoConfig.ParallelNode, count)
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "BeforeEach")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "BeforeEach")
 		}()
 
 		namespace = WEGO_DEFAULT_NAMESPACE
@@ -80,7 +81,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 			Expect(FileExists(WEGO_BIN_PATH)).To(BeTrue())
 		})
 
-		cont++
+		count++
 	})
 
 	AfterEach(func() {
@@ -96,7 +97,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego cannot work without wego components installed and with both url and directory provided", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var errOutput string
@@ -152,7 +153,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego does not modify the cluster when run with --dry-run flag", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var addCommandOutput string
@@ -215,7 +216,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy an app after it is setup with an empty repo initially", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		private := true
@@ -271,7 +272,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy app when user specifies branch, namespace, url, deployment-type", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		private := true
@@ -448,7 +449,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy an app when provided with relative path: 'path/to/repo/dir'", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		private := true
@@ -499,7 +500,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy multiple workloads from a single app repo", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		tip1 := generateTestInputs()
@@ -556,7 +557,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can add multiple apps dir to the cluster using single repo for wego config", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var configRepoRemoteURL string
@@ -626,7 +627,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can add multiple apps dir to the cluster using single app and wego config repo", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		private := true
@@ -681,7 +682,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy an app with app-config-url set to <url>", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var configRepoRemoteURL string
@@ -833,7 +834,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("SmokeTest - Verify that wego can deploy multiple apps one with private and other with public repo", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var listOutput string
 		var pauseOutput string
@@ -1043,7 +1044,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy a helm app from a git repo with app-config-url set to NONE", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var reinstallOutput string
@@ -1141,7 +1142,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy a helm app from a git repo with app-config-url set to default", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		public := false
@@ -1188,7 +1189,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy a helm app from a git repo with app-config-url set to <url>", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var configRepoAbsolutePath string
@@ -1261,7 +1262,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy multiple helm apps from a helm repo with app-config-url set to <url>", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var listOutput string
@@ -1365,7 +1366,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that wego can deploy a helm app from a helm repo with app-config-url set to NONE", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		appName := "loki"
 		workloadName := "loki-0"
@@ -1400,7 +1401,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that a PR is raised against a user repo when skipping auto-merge", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		tip := generateTestInputs()
@@ -1455,7 +1456,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that a PR can be raised against an external repo with app-config-url set to <url>", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		var configRepoRemoteURL string
@@ -1519,7 +1520,7 @@ var _ = Describe("Weave GitOps App Add Tests2", func() {
 	It("Verify that a PR fails when raised against the same app-repo with different branch and app", func() {
 		start := time.Now()
 		defer func() {
-			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %d", cont), "Runtime")
+			metrics.AddRecord(globalParameters.ContextDB, start, time.Now(), fmt.Sprintf("Integration Test %s", metricID), "Runtime")
 		}()
 		var repoAbsolutePath string
 		tip := generateTestInputs()

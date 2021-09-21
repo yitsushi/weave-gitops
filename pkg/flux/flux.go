@@ -51,6 +51,7 @@ var _ Flux = &FluxClient{}
 func (f *FluxClient) Install(namespace string, export bool) ([]byte, error) {
 	args := []string{
 		"install",
+		"--timeout", "6m",
 		"--namespace", namespace,
 		"--components-extra", "image-reflector-controller,image-automation-controller",
 	}
