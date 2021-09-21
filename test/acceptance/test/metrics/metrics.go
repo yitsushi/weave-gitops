@@ -2,57 +2,127 @@ package metrics
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/boltdb/bolt"
 )
 
-type record struct {
-	Startdate       string `json:"startDate"`
-	Enddate         string `json:"endDate"`
-	IntegrationName string `json:"taskName"`
-	Stage           string `json:"status"`
-}
-
-type Records struct {
-	records []record
-}
-
-func NewRecords() *Records {
-	return &Records{make([]record, 0)}
-}
-
+const RECORDS_DB = "records"
+const RECORDS_TABLE = "records"
 const JS_TIME_LAYOUT = "Mon Jan 02 15:04:05 MST 2006"
 
-func (r *Records) AddRecords(start, end time.Time, integrationName, stage string) {
-	st := start.Format(JS_TIME_LAYOUT)
-	en := end.Format(JS_TIME_LAYOUT)
-	r.records = append(r.records, record{fmt.Sprintf("_%s-", st), fmt.Sprintf(";%s+", en), integrationName, stage})
+type record struct {
+	Startdate       string
+	Enddate         string
+	IntegrationName string
+	Stage           string
 }
 
-func (r *Records) GetJSArray() string {
+func toBytes(r record) []byte {
+	bts, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	return bts
+}
+
+func CreateRecordsDB(dbPath string) error {
+	db, err := bolt.Open(filepath.Join(dbPath, RECORDS_DB), 0755, &bolt.Options{})
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	return db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(RECORDS_TABLE))
+		return err
+	})
+}
+
+func AddRecord(dbPath string, start, end time.Time, integrationName, stage string) {
+	st := start.Format(JS_TIME_LAYOUT)
+	en := end.Format(JS_TIME_LAYOUT)
+
+	path := filepath.Join(dbPath)
+
+	db, err := bolt.Open(filepath.Join(dbPath, RECORDS_DB), 0755, &bolt.Options{})
+	if err != nil {
+		panic(fmt.Errorf("error opening db %s . %s", path, err))
+	}
+	defer db.Close()
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(RECORDS_TABLE))
+		id, _ := b.NextSequence()
+		clusterID := itob(int(id))
+
+		c2 := record{
+			Startdate:       fmt.Sprintf("_%s-", st),
+			Enddate:         fmt.Sprintf(";%s+", en),
+			IntegrationName: integrationName,
+			Stage:           stage,
+		}
+
+		return b.Put(clusterID, toBytes(c2))
+	})
+
+}
+
+// itob returns an 8-byte big endian representation of v.
+func itob(v int) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	return b
+}
+
+func GetJSArray(dbPath string) string {
+
+	db, err := bolt.Open(filepath.Join(dbPath, RECORDS_DB), 0755, &bolt.Options{})
+	if err != nil {
+		panic(fmt.Errorf("error opening db %s in get cluster %w", dbPath, err))
+	}
+	defer db.Close()
 
 	records := "["
 
-	for _, rec := range r.records {
-		bts, err := json.Marshal(rec)
-		if err != nil {
-			panic(err)
-		}
-		firstStart := strings.Index(string(bts), "_") - 2
-		endStart := bytes.IndexByte(bts, '-')
-		bts = append(bts[:firstStart+1], append([]byte(fmt.Sprintf("new Date(\"%s\")", rec.Startdate[1:len(rec.Startdate)-1])), bts[endStart+2:]...)...)
+	count := 0
+	err = db.Batch(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(RECORDS_TABLE))
+		return b.ForEach(func(_, bts []byte) error {
 
-		firstStart = strings.Index(string(bts), ";") - 2
-		endStart = bytes.IndexByte(bts, '+')
-		bts = append(bts[:firstStart+1], append([]byte(fmt.Sprintf("new Date(\"%s\")", rec.Enddate[1:len(rec.Enddate)-1])), bts[endStart+2:]...)...)
+			fmt.Println("check0")
+			rec := record{}
+			err := json.Unmarshal(bts, &rec)
+			if err != nil {
+				return fmt.Errorf("error on unmarshal on iteration0 %w", err)
+			}
 
-		records += string(bts) + ",\n"
+			fmt.Println("check1")
+			firstStart := strings.Index(string(bts), "_") - 2
+			endStart := bytes.IndexByte(bts, '-')
+			bts = append(bts[:firstStart+1], append([]byte(fmt.Sprintf("new Date(\"%s\")", rec.Startdate[1:len(rec.Startdate)-1])), bts[endStart+2:]...)...)
 
+			fmt.Println("check2")
+			firstStart = strings.Index(string(bts), ";") - 2
+			endStart = bytes.IndexByte(bts, '+')
+			bts = append(bts[:firstStart+1], append([]byte(fmt.Sprintf("new Date(\"%s\")", rec.Enddate[1:len(rec.Enddate)-1])), bts[endStart+2:]...)...)
+
+			fmt.Println("check3", records)
+			records += string(bts) + ",\n"
+			count++
+			return nil
+		})
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	if len(r.records) != 0 {
+	if count != 0 {
 		records = records[:len(records)-2]
 	}
 

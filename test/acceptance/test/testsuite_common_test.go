@@ -4,12 +4,14 @@ package acceptance
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"
 
 	"github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo"
@@ -41,6 +43,23 @@ func TestAcceptance(t *testing.T) {
 	RegisterFailHandler(Fail)
 	//gomega.RegisterFailHandler(GomegaFail)
 	RunSpecs(t, "Weave GitOps User Acceptance Tests")
+}
+
+func (g *GlobalParameters) ToJSONString() string {
+	bts, err := json.Marshal(g)
+	if err != nil {
+		panic(err)
+	}
+	return string(bts)
+}
+
+func FromJSONString(input []byte) GlobalParameters {
+	var g GlobalParameters
+	err := json.Unmarshal(input, &g)
+	if err != nil {
+		panic(err)
+	}
+	return g
 }
 
 var clusterPool2 *cluster.ClusterPool2
@@ -75,26 +94,32 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		err = cluster.CreateClusterDB(dbDirectory)
 		Expect(err).NotTo(HaveOccurred())
 
+		err = metrics.CreateRecordsDB(dbDirectory)
+		Expect(err).NotTo(HaveOccurred())
+
 		clusterPool2 = cluster.NewClusterPool2()
 
 		clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal)
-		go clusterPool2.GenerateClusters2(dbDirectory, 1)
+		go clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal)
 
 		globalCtx, globalCancel = context.WithCancel(context.Background())
 
 		go clusterPool2.CreateClusterOnRequest(globalCtx, dbDirectory)
-	} else {
-		Recods = metrics.NewRecords()
+
 	}
 
-	return []byte(dbDirectory)
-}, func(dbDirectory []byte) {
+	gp := GlobalParameters{
+		ContextDB: dbDirectory,
+	}
+
+	return []byte(gp.ToJSONString())
+}, func(gParameters []byte) {
+
+	fmt.Println("Parameters", string(gParameters))
+
+	globalParameters = FromJSONString(gParameters)
 
 	fmt.Println("Running Node ", config.GinkgoConfig.ParallelNode)
-
-	fmt.Println("dbDirectory", string(dbDirectory))
-	globalDbDirectory = dbDirectory
-	fmt.Println("globalDbDirectory", globalDbDirectory)
 
 	SetDefaultEventuallyTimeout(EVENTUALLY_DEFAULT_TIMEOUT)
 	DEFAULT_SSH_KEY_PATH = os.Getenv("HOME") + "/.ssh/id_rsa"
@@ -127,8 +152,6 @@ func GomegaFail(message string, callerSkip ...int) {
 }
 
 var _ = SynchronizedAfterSuite(func() {
-	records := Recods.GetJSArray()
-	fmt.Println("RECORDS", records)
 	//err := cluster.UpdateClusterToDeleted(gloablDbDirectory,globalclusterID,syncCluster)
 	//Expect(err).NotTo(HaveOccurred())
 	//syncCluster.CleanUp()
@@ -144,16 +167,18 @@ var _ = SynchronizedAfterSuite(func() {
 		if err != nil {
 			fmt.Printf("Error deleting ramaining clusters %s\n", err)
 		}
-		err = os.RemoveAll(string(globalDbDirectory))
-		if err != nil {
-			fmt.Printf("Error deleting root folder %s\n", err)
-		}
+		//err = os.RemoveAll(globalParameters.ContextDB)
+		//if err != nil {
+		//	fmt.Printf("Error deleting root folder %s\n", err)
+		//}
 		errors := clusterPool2.Errors()
 		if len(errors) > 0 {
 			for _, err := range clusterPool2.Errors() {
 				fmt.Println("error", err)
 			}
 		}
+		records := metrics.GetJSArray(globalParameters.ContextDB)
+		fmt.Println("RECORDS", records)
 	}
 
 })
