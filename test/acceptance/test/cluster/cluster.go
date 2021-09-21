@@ -461,7 +461,7 @@ func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
 				if err != nil {
 					c.AppendError(fmt.Errorf("error creating record %w", err))
 				}
-				metrics.AddRecord(dbPath, start, time.Now(), fmt.Sprintf("Creating cluster %d", ind), "ClusterCreation")
+				metrics.AddRecord([]byte(dbPath), start, time.Now(), fmt.Sprintf("Creating cluster %d", ind), "ClusterCreation")
 				ind++
 			}
 		}
