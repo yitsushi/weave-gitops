@@ -451,12 +451,14 @@ func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
 	clusters := make(chan *Cluster, clusterCount)
 	done := make(chan bool, 1)
 	go func() {
-		for cluster := range clusters {
+		for ind, cluster := range clusters {
 			if cluster != nil {
+				start := time.Now()
 				err := CreateClusterRecord2(dbPath, *cluster)
 				if err != nil {
 					c.AppendError(fmt.Errorf("error creating record %w", err))
 				}
+				metrics.AddRecord(dbPath, start, time.Now(), fmt.Sprintf("Creating cluster %d", ind), "ClusterCreation")
 			}
 		}
 		done <- true
