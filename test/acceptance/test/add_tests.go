@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/onsi/gomega/gbytes"
-
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"

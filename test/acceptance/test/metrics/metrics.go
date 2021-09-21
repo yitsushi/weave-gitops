@@ -44,15 +44,13 @@ func CreateRecordsDB(dbPath string) error {
 	})
 }
 
-func AddRecord(dbPath string, start, end time.Time, integrationName, stage string) {
+func AddRecord(dbPath []byte, start, end time.Time, integrationName, stage string) {
 	st := start.Format(JS_TIME_LAYOUT)
 	en := end.Format(JS_TIME_LAYOUT)
 
-	path := filepath.Join(dbPath)
-
-	db, err := bolt.Open(filepath.Join(dbPath, RECORDS_DB), 0755, &bolt.Options{})
+	db, err := bolt.Open(filepath.Join(string(dbPath), RECORDS_DB), 0755, &bolt.Options{})
 	if err != nil {
-		panic(fmt.Errorf("error opening db %s . %s", path, err))
+		panic(fmt.Errorf("error opening db %s . %s", dbPath, err))
 	}
 	defer db.Close()
 
