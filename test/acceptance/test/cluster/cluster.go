@@ -356,8 +356,10 @@ func (c *ClusterPool2) End() {
 }
 
 func (c *ClusterPool2) AppendError(err error) {
+	if err != nil {
+		panic(err)
+	}
 	c.Lock()
-	panic(err)
 	c.errOnGenerate = append(c.errOnGenerate, err)
 	c.Unlock()
 	gexec.Kill()
