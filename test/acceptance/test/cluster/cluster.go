@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"
+
 	"github.com/boltdb/bolt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -451,7 +453,8 @@ func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
 	clusters := make(chan *Cluster, clusterCount)
 	done := make(chan bool, 1)
 	go func() {
-		for ind, cluster := range clusters {
+		ind := 0
+		for cluster := range clusters {
 			if cluster != nil {
 				start := time.Now()
 				err := CreateClusterRecord2(dbPath, *cluster)
@@ -459,6 +462,7 @@ func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
 					c.AppendError(fmt.Errorf("error creating record %w", err))
 				}
 				metrics.AddRecord(dbPath, start, time.Now(), fmt.Sprintf("Creating cluster %d", ind), "ClusterCreation")
+				ind++
 			}
 		}
 		done <- true
