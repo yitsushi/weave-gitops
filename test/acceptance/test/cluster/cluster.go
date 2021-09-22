@@ -356,13 +356,9 @@ func (c *ClusterPool2) End() {
 }
 
 func (c *ClusterPool2) AppendError(err error) {
-	if err != nil {
-		panic(err)
-	}
 	c.Lock()
 	c.errOnGenerate = append(c.errOnGenerate, err)
 	c.Unlock()
-	gexec.Kill()
 }
 
 func (c *ClusterPool2) IsListeningToRequestedClusters() bool {
@@ -375,6 +371,7 @@ func (c *ClusterPool2) IsListeningToRequestedClusters() bool {
 func (c *ClusterPool2) CreateClusterOnRequest(ctx context.Context, dbPath string) {
 	// iterate over all register until find REQUESTED
 
+	count := 0
 	for c.IsListeningToRequestedClusters() {
 
 		db, err := bolt.Open(filepath.Join(dbPath, CLUSTER_DB), 0755, &bolt.Options{})
@@ -412,10 +409,14 @@ func (c *ClusterPool2) CreateClusterOnRequest(ctx context.Context, dbPath string
 
 		if kClusterID != nil {
 
+			start := time.Now()
 			kindCluster, err := CreateKindCluster(ctx, dbPath)
 			if err != nil {
 				fmt.Println("Error check 0", err)
 				c.AppendError(fmt.Errorf("error creating kind cluster %w", err))
+			} else {
+				metrics.AddRecord([]byte(dbPath), start, time.Now(), fmt.Sprintf("Creating cluster %s-%d", "onrequest", count), "ClusterCreation")
+				count++
 			}
 
 			if kindCluster != nil {
@@ -454,23 +455,19 @@ func (c *ClusterPool2) CreateClusterOnRequest(ctx context.Context, dbPath string
 	}
 }
 
-func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
+func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int, prefix string) {
 
 	ctx := context.Background()
 
 	clusters := make(chan *Cluster, clusterCount)
 	done := make(chan bool, 1)
 	go func() {
-		ind := 0
 		for cluster := range clusters {
 			if cluster != nil {
-				start := time.Now()
 				err := CreateClusterRecord2(dbPath, *cluster)
 				if err != nil {
 					c.AppendError(fmt.Errorf("error creating record %w", err))
 				}
-				metrics.AddRecord([]byte(dbPath), start, time.Now(), fmt.Sprintf("Creating cluster %d", ind), "ClusterCreation")
-				ind++
 			}
 		}
 		done <- true
@@ -482,9 +479,12 @@ func (c *ClusterPool2) GenerateClusters2(dbPath string, clusterCount int) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			start := time.Now()
 			kindCluster, err := CreateKindCluster(ctx, dbPath)
 			if err != nil {
 				c.AppendError(fmt.Errorf("error creating kind cluster %w", err))
+			} else {
+				metrics.AddRecord([]byte(dbPath), start, time.Now(), fmt.Sprintf("Creating cluster %s-%d", prefix, i), "ClusterCreation")
 			}
 			clusters <- kindCluster
 		}()

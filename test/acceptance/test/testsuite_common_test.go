@@ -82,8 +82,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 		clusterPool2 = cluster.NewClusterPool2()
 
-		clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal)
-		go clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal)
+		clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal, "init")
+		go clusterPool2.GenerateClusters2(dbDirectory, 1, "background")
 
 		globalCtx, globalCancel = context.WithCancel(context.Background())
 
@@ -135,7 +135,8 @@ var _ = SynchronizedAfterSuite(func() {
 	//syncCluster.CleanUp()
 }, func() {
 	if os.Getenv(CI) == "" {
-		globalCancel()
+		records := metrics.GetJSArray(contextDirectory)
+		fmt.Println("RECORDS", records)
 		clusterPool2.End()
 		cmd := "kind delete clusters --all"
 		c := exec.Command("sh", "-c", cmd)
@@ -145,8 +146,6 @@ var _ = SynchronizedAfterSuite(func() {
 		if err != nil {
 			fmt.Printf("Error deleting ramaining clusters %s\n", err)
 		}
-		records := metrics.GetJSArray(contextDirectory)
-		fmt.Println("RECORDS", records)
 		errors := clusterPool2.Errors()
 		if len(errors) > 0 {
 			for _, err := range clusterPool2.Errors() {
@@ -157,6 +156,7 @@ var _ = SynchronizedAfterSuite(func() {
 		if err != nil {
 			fmt.Printf("Error deleting root folder %s\n", err)
 		}
+		globalCancel()
 	}
 
 })
