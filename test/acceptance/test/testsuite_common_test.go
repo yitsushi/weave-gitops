@@ -145,18 +145,18 @@ var _ = SynchronizedAfterSuite(func() {
 		if err != nil {
 			fmt.Printf("Error deleting ramaining clusters %s\n", err)
 		}
-		err = os.RemoveAll(string(contextDirectory))
-		if err != nil {
-			fmt.Printf("Error deleting root folder %s\n", err)
-		}
+		records := metrics.GetJSArray(contextDirectory)
+		fmt.Println("RECORDS", records)
 		errors := clusterPool2.Errors()
 		if len(errors) > 0 {
 			for _, err := range clusterPool2.Errors() {
 				fmt.Println("error", err)
 			}
 		}
-		records := metrics.GetJSArray(contextDirectory)
-		fmt.Println("RECORDS", records)
+		err = os.RemoveAll(string(contextDirectory))
+		if err != nil {
+			fmt.Printf("Error deleting root folder %s\n", err)
+		}
 	}
 
 })
