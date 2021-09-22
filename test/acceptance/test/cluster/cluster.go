@@ -414,12 +414,14 @@ func (c *ClusterPool2) CreateClusterOnRequest(ctx context.Context, dbPath string
 
 			kindCluster, err := CreateKindCluster(ctx, dbPath)
 			if err != nil {
+				fmt.Println("Error check 0", err)
 				c.AppendError(fmt.Errorf("error creating kind cluster %w", err))
 			}
 
 			if kindCluster != nil {
 				db, err = bolt.Open(filepath.Join(dbPath, CLUSTER_DB), 0755, &bolt.Options{})
 				if err != nil {
+					fmt.Println("Error check 1", err)
 					c.AppendError(fmt.Errorf("error opening db %w", err))
 				}
 				err = db.Update(func(tx *bolt.Tx) error {
