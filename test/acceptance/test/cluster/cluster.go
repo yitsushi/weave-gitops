@@ -429,6 +429,9 @@ func (c *ClusterPool2) CreateClusterOnRequest(ctx context.Context, dbPath string
 					if err != nil {
 						return fmt.Errorf("error unmarshalling cluster %w", err)
 					}
+
+					fmt.Println("bts", string(bts))
+					fmt.Println("kClusterID", kClusterID)
 					err = b.Put(kClusterID, bts)
 					if err != nil {
 						return fmt.Errorf("error updating cluster record %w", err)
