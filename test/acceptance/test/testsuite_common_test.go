@@ -137,6 +137,7 @@ var _ = SynchronizedAfterSuite(func() {
 	if os.Getenv(CI) == "" {
 		records := metrics.GetJSArray(contextDirectory)
 		fmt.Println("RECORDS", records)
+		metrics.PrintOutTasksInOrder(contextDirectory)
 		clusterPool2.End()
 		cmd := "kind delete clusters --all"
 		c := exec.Command("sh", "-c", cmd)

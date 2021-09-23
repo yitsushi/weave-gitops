@@ -17,10 +17,10 @@ const RECORDS_TABLE = "records"
 const JS_TIME_LAYOUT = "Mon Jan 02 15:04:05 MST 2006"
 
 type record struct {
-	Startdate       string
-	Enddate         string
-	IntegrationName string
-	Stage           string
+	Startdate       string `json:"startDate"`
+	Enddate         string `json:"endDate"`
+	IntegrationName string `json:"taskName"`
+	Stage           string `json:"status"`
 }
 
 func toBytes(r record) []byte {
@@ -127,4 +127,45 @@ func GetJSArray(dbPath []byte) string {
 	records += "]"
 
 	return records
+}
+
+func PrintOutTasksInOrder(dbPath []byte) {
+
+	db, err := bolt.Open(filepath.Join(string(dbPath), RECORDS_DB), 0755, &bolt.Options{})
+
+	if err != nil {
+		panic(fmt.Errorf("error opening db %s in get cluster %w", dbPath, err))
+	}
+
+	defer db.Close()
+
+	taskNames := make([]string, 0)
+	err = db.Batch(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(RECORDS_TABLE))
+		return b.ForEach(func(_, bts []byte) error {
+			rec := record{}
+			err := json.Unmarshal(bts, &rec)
+
+			if err != nil {
+				return fmt.Errorf("error on unmarshal on iteration0 %w", err)
+			}
+
+			taskNames = append(taskNames, rec.IntegrationName)
+
+			return nil
+		})
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	bts, err := json.Marshal(taskNames)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("TASK-NAMES", string(bts))
+
 }
