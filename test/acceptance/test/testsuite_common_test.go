@@ -12,28 +12,20 @@ import (
 
 	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"
 
-	"github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
+
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 	"github.com/weaveworks/weave-gitops/test/acceptance/test/cluster"
 )
 
 func TestAcceptance(t *testing.T) {
-
 	defer func() {
-		err := ShowItems("", "")
-		if err != nil {
-			log.Infof("Failed to print the cluster resources")
+		if webDriver != nil {
+			filepath := takeScreenshot()
+			fmt.Printf("Failure screenshot is saved in file %s\n", filepath)
 		}
-
-		err = ShowItems("GitRepositories", "")
-		if err != nil {
-			log.Infof("Failed to print the GitRepositories")
-		}
-
-		ShowWegoControllerLogs(WEGO_DEFAULT_NAMESPACE, "")
 	}()
 
 	if testing.Short() {
@@ -41,25 +33,10 @@ func TestAcceptance(t *testing.T) {
 	}
 
 	RegisterFailHandler(Fail)
-	//gomega.RegisterFailHandler(GomegaFail)
 	RunSpecs(t, "Weave GitOps User Acceptance Tests")
 }
 
-var clusterPool2 *cluster.ClusterPool2
-
-//var syncCluster2 *cluster.Cluster2
-
-// TODO: crear todos los kind clusters al mismo tiempo al inicio
-// TODO: despues solo crear uno cuando se desocupe uno
-// TODO: delete temporary root folder
-// TODO: solo crear un nuevo cluster cuando se elimine uno
-// asi me evito de tener tanta logica en el método de generar
-// claro!!! de esta lo unico que tendria que hacer es generar
-// los cluster paralelos que voy a querer as inicio y ya dejo
-// que lo que las creaciones despues de eliminar sean las que "generen mas"
-// Ya está!!! solo tengo que crear lo doble de los nodos al inicio(N) para ya tener
-// listo N cluster cuando el primero termino y ya con la logic de crear al eliminar
-// siempre tendria N disponibles
+var clusterPool *cluster.ClusterPool
 
 var globalCtx context.Context
 var globalCancel func()
@@ -80,15 +57,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		err = metrics.CreateRecordsDB(dbDirectory)
 		Expect(err).NotTo(HaveOccurred())
 
-		clusterPool2 = cluster.NewClusterPool2()
+		clusterPool = cluster.NewClusterPool()
 
-		clusterPool2.GenerateClusters2(dbDirectory, config.GinkgoConfig.ParallelTotal, "init")
-		go clusterPool2.GenerateClusters2(dbDirectory, 2, "background")
+		clusterPool.GenerateClusters(dbDirectory, config.GinkgoConfig.ParallelTotal, "init")
+		err = cluster.RequestClusterCreation([]byte(dbDirectory))
+		Expect(err).NotTo(HaveOccurred())
+		err = cluster.RequestClusterCreation([]byte(dbDirectory))
+		Expect(err).NotTo(HaveOccurred())
 
 		globalCtx, globalCancel = context.WithCancel(context.Background())
 
-		go clusterPool2.CreateClusterOnRequest(globalCtx, dbDirectory)
-
+		go clusterPool.CreateClusterOnRequest(globalCtx, dbDirectory)
 	}
 
 	return []byte(dbDirectory)
@@ -106,39 +85,15 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		WEGO_BIN_PATH = "/usr/local/bin/gitops"
 	}
 	log.Infof("GITOPS Binary Path: %s", WEGO_BIN_PATH)
-
-	//var err error
-	//syncCluster, err = cluster.CreateKindCluster(string(kubeConfigRoot))
-	//Expect(err).NotTo(HaveOccurred())
-	//syncCluster = clusterPool.GetNextCluster()
-
-	//  func(clusterPoolSyncFile []byte) {
-	//    calculate randomID
-	//    write randomID
-	//    waitUntil the record pointing to randomID has a cluster on it
-	//    if error then fail with Expected
-	//    createClusterReferences syncCluster based on record
 })
 
-func GomegaFail(message string, callerSkip ...int) {
-	if webDriver != nil {
-		filepath := takeScreenshot()
-		fmt.Printf("Failure screenshot is saved in file %s\n", filepath)
-	}
-
-	ginkgo.Fail(message, callerSkip...)
-}
-
 var _ = SynchronizedAfterSuite(func() {
-	//err := cluster.UpdateClusterToDeleted(gloablDbDirectory,globalclusterID,syncCluster)
-	//Expect(err).NotTo(HaveOccurred())
-	//syncCluster.CleanUp()
 }, func() {
 	if os.Getenv(CI) == "" {
 		records := metrics.GetJSArray(contextDirectory)
 		fmt.Println("RECORDS", records)
 		metrics.PrintOutTasksInOrder(contextDirectory)
-		clusterPool2.End()
+		clusterPool.End()
 		cmd := "kind delete clusters --all"
 		c := exec.Command("sh", "-c", cmd)
 		c.Stdout = os.Stdout
@@ -146,12 +101,6 @@ var _ = SynchronizedAfterSuite(func() {
 		err := c.Run()
 		if err != nil {
 			fmt.Printf("Error deleting ramaining clusters %s\n", err)
-		}
-		errors := clusterPool2.Errors()
-		if len(errors) > 0 {
-			for _, err := range clusterPool2.Errors() {
-				fmt.Println("error", err)
-			}
 		}
 		err = os.RemoveAll(string(contextDirectory))
 		if err != nil {
@@ -161,14 +110,3 @@ var _ = SynchronizedAfterSuite(func() {
 	}
 
 })
-
-//var _ = BeforeSuite(func() {
-//	SetDefaultEventuallyTimeout(EVENTUALLY_DEFAULT_TIMEOUT)
-//	DEFAULT_SSH_KEY_PATH = os.Getenv("HOME") + "/.ssh/id_rsa"
-//	GITHUB_ORG = os.Getenv("GITHUB_ORG")
-//	WEGO_BIN_PATH = os.Getenv("WEGO_BIN_PATH")
-//	if WEGO_BIN_PATH == "" {
-//		WEGO_BIN_PATH = "/usr/local/bin/wego"
-//	}
-//	log.Infof("WEGO Binary Path: %s", WEGO_BIN_PATH)
-//})

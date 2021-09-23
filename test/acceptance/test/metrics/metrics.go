@@ -28,6 +28,7 @@ func toBytes(r record) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return bts
 }
 
@@ -69,17 +70,20 @@ func AddRecord(dbPath []byte, start, end time.Time, integrationName, stage strin
 		return b.Put(clusterID, toBytes(c2))
 	})
 
+	if err != nil {
+		panic(err)
+	}
 }
 
 // itob returns an 8-byte big endian representation of v.
 func itob(v int) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(v))
+
 	return b
 }
 
 func GetJSArray(dbPath []byte) string {
-
 	db, err := bolt.Open(filepath.Join(string(dbPath), RECORDS_DB), 0755, &bolt.Options{})
 	if err != nil {
 		panic(fmt.Errorf("error opening db %s in get cluster %w", dbPath, err))
@@ -116,6 +120,7 @@ func GetJSArray(dbPath []byte) string {
 			return nil
 		})
 	})
+
 	if err != nil {
 		panic(err)
 	}
@@ -130,7 +135,6 @@ func GetJSArray(dbPath []byte) string {
 }
 
 func PrintOutTasksInOrder(dbPath []byte) {
-
 	db, err := bolt.Open(filepath.Join(string(dbPath), RECORDS_DB), 0755, &bolt.Options{})
 
 	if err != nil {
@@ -167,5 +171,4 @@ func PrintOutTasksInOrder(dbPath []byte) {
 	}
 
 	fmt.Println("TASK-NAMES", string(bts))
-
 }

@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/weaveworks/weave-gitops/test/acceptance/test/metrics"
@@ -30,7 +32,6 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 		deleteWegoRuntime = true
 	}
 
-	// Variables when running locally
 	var cluster cltr.Cluster2
 	var namespace string
 	var clusterID []byte
@@ -49,17 +50,16 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 
 		namespace = WEGO_DEFAULT_NAMESPACE
 
+		var err error
 		if os.Getenv(CI) == "" {
-			var err error
+
 			clusterID, cluster, err = cltr.FindCreatedClusterAndAssignItToSomeRecord(contextDirectory)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println("KubeConfigPath", cluster.KubeConfigPath)
 		} else {
 			By("Given I have a brand new cluster", func() {
 
 				cluster = cltr.Cluster2{}
 
-				var err error
 				_, err = ResetOrCreateCluster(namespace, deleteWegoRuntime, cluster.KubeConfigPath)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -76,7 +76,18 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 
 	AfterEach(func() {
 		if os.Getenv(CI) == "" {
-			err := cltr.UpdateClusterToDeleted(contextDirectory, clusterID, cluster)
+			err := ShowItems("", cluster.KubeConfigPath)
+			if err != nil {
+				log.Infof("Failed to print the cluster resources")
+			}
+
+			err = ShowItems("GitRepositories", cluster.KubeConfigPath)
+			if err != nil {
+				log.Infof("Failed to print the GitRepositories")
+			}
+
+			ShowWegoControllerLogs(namespace, cluster.KubeConfigPath)
+			err = cltr.UpdateClusterToDeleted(contextDirectory, clusterID, cluster)
 			Expect(err).NotTo(HaveOccurred())
 			cluster.CleanUp()
 			err = cltr.RequestClusterCreation(contextDirectory)
@@ -274,15 +285,15 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 		DEFAULT_SSH_KEY_PATH := "~/.ssh/id_rsa"
 		tip := generateTestInputs()
 		branchName := "test-branch-02"
-		wegoNamespace := "my-space"
+		namespace = "my-space"
 		appName := tip.appRepoName
 		appRepoRemoteURL := "ssh://git@github.com/" + GITHUB_ORG + "/" + appName + ".git"
 
-		addCommand := "app add --url=" + appRepoRemoteURL + " --branch=" + branchName + " --namespace=" + wegoNamespace + " --deployment-type=kustomize --app-config-url=NONE"
+		addCommand := "app add --url=" + appRepoRemoteURL + " --branch=" + branchName + " --namespace=" + namespace + " --deployment-type=kustomize --app-config-url=NONE"
 
 		defer deleteRepo(tip.appRepoName)
 		defer deleteWorkload(tip.workloadName, tip.workloadNamespace, "")
-		defer uninstallWegoRuntime(wegoNamespace, "")
+		defer uninstallWegoRuntime(namespace, "")
 
 		By("And application repo does not already exist", func() {
 			deleteRepo(tip.appRepoName)
@@ -292,8 +303,8 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 			deleteWorkload(tip.workloadName, tip.workloadNamespace, "")
 		})
 
-		By("And namespace: "+wegoNamespace+" doesn't exist", func() {
-			uninstallWegoRuntime(wegoNamespace, "")
+		By("And namespace: "+namespace+" doesn't exist", func() {
+			uninstallWegoRuntime(namespace, "")
 		})
 
 		By("When I create a private repo with my app workload", func() {
@@ -301,8 +312,8 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 			gitAddCommitPush(repoAbsolutePath, tip.appManifestFilePath)
 		})
 
-		By("And I install gitops under my namespace: "+wegoNamespace, func() {
-			installAndVerifyWego(wegoNamespace, cluster.KubeConfigPath)
+		By("And I install gitops under my namespace: "+namespace, func() {
+			installAndVerifyWego(namespace, cluster.KubeConfigPath)
 		})
 
 		By("And I have my default ssh key on path "+DEFAULT_SSH_KEY_PATH, func() {
@@ -314,16 +325,16 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 		})
 
 		By("And I run gitops add command with specified branch, namespace, url, deployment-type", func() {
-			runWegoAddCommand(repoAbsolutePath, addCommand, wegoNamespace, cluster.KubeConfigPath)
+			runWegoAddCommand(repoAbsolutePath, addCommand, namespace, cluster.KubeConfigPath)
 		})
 
 		By("Then I should see my workload deployed to the cluster", func() {
-			verifyWegoAddCommand(appName, wegoNamespace, cluster.KubeConfigPath)
+			verifyWegoAddCommand(appName, namespace, cluster.KubeConfigPath)
 			verifyWorkloadIsDeployed(tip.workloadName, tip.workloadNamespace, cluster.KubeConfigPath)
 		})
 
 		By("And my app is deployed under specified branch name", func() {
-			branchOutput, _ := runCommandAndReturnStringOutput(fmt.Sprintf("kubectl get -n %s GitRepositories", wegoNamespace), cluster.KubeConfigPath)
+			branchOutput, _ := runCommandAndReturnStringOutput(fmt.Sprintf("kubectl get -n %s GitRepositories", namespace), cluster.KubeConfigPath)
 			Eventually(branchOutput).Should(ContainSubstring(appName))
 			Eventually(branchOutput).Should(ContainSubstring(branchName))
 		})
@@ -993,7 +1004,7 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 			createAppReplicas(repoAbsolutePath1, appManifestFile1, replicaSetValue, tip1.workloadName, cluster.KubeConfigPath)
 			gitUpdateCommitPush(repoAbsolutePath1)
 			_ = waitForReplicaCreation(tip1.workloadNamespace, replicaSetValue, 2*time.Minute, cluster.KubeConfigPath)
-			_ = runCommandPassThrough([]string{}, cluster.KubeConfigPath, "sh", "-c", fmt.Sprintf("kubectl wait --for=condition=Ready --timeout=100s -n %s --all pods", tip1.workloadNamespace))
+			_ = runCommandPassThrough([]string{}, cluster.KubeConfigPath, "sh", "-c", fmt.Sprintf("kubectl wait --for=condition=Ready --timeout=100s -n %s --all pods --selector='app!=wego-app'", tip1.workloadNamespace))
 		})
 
 		By("And number of app replicas should remain same", func() {
@@ -1082,7 +1093,7 @@ var _ = Describe("Weave GitOps App Add Tests", func() {
 			_, commitList2 = runCommandAndReturnStringOutput(fmt.Sprintf("%s app %s get commits", WEGO_BIN_PATH, appName2), cluster.KubeConfigPath)
 		})
 
-		By("Then I should see the list of commits for app2", func() {
+		By("Then I should not see the list of commits for app2", func() {
 			Eventually(commitList2).Should(ContainSubstring(`Error:`))
 			Eventually(commitList2).Should(MatchRegexp(`\"` + appName2 + `\" not found`))
 		})
