@@ -3,9 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/weaveworks/weave-gitops/pkg/services/auth/internal"
 	"io"
 	"net/http"
+
+	"github.com/weaveworks/weave-gitops/pkg/services/auth/internal"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/weaveworks/weave-gitops/pkg/flux"
@@ -197,7 +198,6 @@ func (a *authSvc) setupDeployKey(ctx context.Context, name SecretName, targetNam
 	}
 
 	if deployKeyExists {
-		a.logger.Println("Existing deploy key found")
 		// The deploy key was found on the Git Provider, fetch it from the cluster.
 		secret, err := a.retrieveDeployKey(ctx, name)
 		if apierrors.IsNotFound(err) {
