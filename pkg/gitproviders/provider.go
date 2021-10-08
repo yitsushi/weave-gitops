@@ -25,6 +25,14 @@ const (
 	defaultTimeout = time.Second * 30
 )
 
+type ErrInvalidProvider struct {
+	ProviderName GitProviderName
+}
+
+func (e ErrInvalidProvider) Error() string {
+	return fmt.Sprintf("unknown git provider: %q", e.ProviderName)
+}
+
 // GitProvider Handler
 //counterfeiter:generate . GitProvider
 type GitProvider interface {

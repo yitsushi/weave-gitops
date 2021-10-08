@@ -3,9 +3,15 @@ package status
 import (
 	"context"
 	"fmt"
+	"os"
+
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
+	"github.com/weaveworks/weave-gitops/pkg/runner"
+	"github.com/weaveworks/weave-gitops/pkg/services"
 
 	"github.com/spf13/cobra"
-	"github.com/weaveworks/weave-gitops/pkg/apputils"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 )
 
@@ -24,7 +30,10 @@ var Cmd = &cobra.Command{
 		params.Name = args[0]
 		params.Namespace, _ = cmd.Parent().Parent().Flags().GetString("namespace")
 
-		appService, appError := apputils.GetAppService(ctx, params.Name, params.Namespace)
+		log := logger.NewCLILogger(os.Stdout)
+		fluxClient := flux.New(osys.New(), &runner.CLIRunner{})
+		appFactory := services.NewFactory(fluxClient, log)
+		appService, appError := appFactory.GetAppService(ctx)
 		if appError != nil {
 			return fmt.Errorf("failed to create app service: %w", appError)
 		}
@@ -34,9 +43,8 @@ var Cmd = &cobra.Command{
 			return fmt.Errorf("failed getting application status: %w", err)
 		}
 
-		logger := apputils.GetLogger()
-		logger.Printf("Last successful reconciliation: %s\n\n", lastSuccessReconciliation)
-		logger.Println(fluxOutput)
+		log.Printf("Last successful reconciliation: %s\n\n", lastSuccessReconciliation)
+		log.Println(fluxOutput)
 
 		return nil
 	},

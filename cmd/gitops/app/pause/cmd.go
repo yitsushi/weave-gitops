@@ -3,11 +3,17 @@ package pause
 import (
 	"context"
 	"fmt"
+	"os"
+
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
+	"github.com/weaveworks/weave-gitops/pkg/runner"
+	"github.com/weaveworks/weave-gitops/pkg/services"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
-	"github.com/weaveworks/weave-gitops/pkg/apputils"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 )
 
@@ -32,7 +38,10 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	params.Namespace, _ = cmd.Parent().Flags().GetString("namespace")
 	params.Name = args[0]
 
-	appService, appError := apputils.GetAppService(ctx, params.Name, params.Namespace)
+	fluxClient := flux.New(osys.New(), &runner.CLIRunner{})
+	factory := services.NewFactory(fluxClient, logger.NewCLILogger(os.Stdout))
+
+	appService, appError := factory.GetAppService(ctx)
 	if appError != nil {
 		return fmt.Errorf("failed to create app service: %w", appError)
 	}

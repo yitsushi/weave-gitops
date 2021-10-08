@@ -5,14 +5,22 @@ package add
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/weaveworks/weave-gitops/cmd/internal"
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/logger"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
+	"github.com/weaveworks/weave-gitops/pkg/runner"
+	"github.com/weaveworks/weave-gitops/pkg/services"
+	"github.com/weaveworks/weave-gitops/pkg/services/auth"
 
 	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
-	"github.com/weaveworks/weave-gitops/pkg/apputils"
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/git/wrapper"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
@@ -97,18 +105,29 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return urlErr
 	}
 
-	if readyErr := apputils.IsClusterReady(); readyErr != nil {
-		return readyErr
-	}
+	log := logger.NewCLILogger(os.Stdout)
+	fluxClient := flux.New(osys.New(), &runner.CLIRunner{})
+	factory := services.NewFactory(fluxClient, log)
 
-	isHelmRepository := params.Chart != ""
+	providerClient := internal.NewGitProviderClient(os.Stdout, os.LookupEnv, auth.NewAuthCLIHandler, log)
 
-	appService, appError := apputils.GetAppServiceForAdd(ctx, params.Url, params.AppConfigUrl, params.Namespace, isHelmRepository, params.DryRun)
+	appService, appError := factory.GetAppService(ctx)
 	if appError != nil {
 		return fmt.Errorf("failed to create app service: %w", appError)
 	}
 
-	if err := appService.Add(params); err != nil {
+	gitClient, gitProvider, gitErr := factory.GetGitClients(ctx, providerClient, services.GitConfigParams{
+		URL:              params.Url,
+		ConfigURL:        params.AppConfigUrl,
+		Namespace:        params.Namespace,
+		IsHelmRepository: params.IsHelmRepository(),
+		DryRun:           params.DryRun,
+	})
+	if gitErr != nil {
+		return fmt.Errorf("failed to get git clients: %w", gitErr)
+	}
+
+	if err := appService.Add(gitClient, gitProvider, params); err != nil {
 		return errors.Wrapf(err, "failed to add the app %s", params.Name)
 	}
 

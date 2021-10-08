@@ -2,11 +2,11 @@ package flux
 
 import (
 	"fmt"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"strings"
 
 	"github.com/pkg/errors"
 	wego "github.com/weaveworks/weave-gitops/api/v1alpha1"
-	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/version"
 )
@@ -39,9 +39,9 @@ type FluxClient struct {
 	runner runner.Runner
 }
 
-func New(osysClient osys.Osys, cliRunner runner.Runner) *FluxClient {
+func New(osClient osys.Osys, cliRunner runner.Runner) *FluxClient {
 	return &FluxClient{
-		osys:   osysClient,
+		osys:   osClient,
 		runner: cliRunner,
 	}
 }

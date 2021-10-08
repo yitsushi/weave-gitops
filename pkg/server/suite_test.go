@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/weaveworks/weave-gitops/pkg/services/servicesfakes"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta1"
-	"github.com/weaveworks/weave-gitops/pkg/apputils/apputilsfakes"
 	"github.com/weaveworks/weave-gitops/pkg/flux"
 	"github.com/weaveworks/weave-gitops/pkg/git/gitfakes"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
@@ -61,10 +61,9 @@ var scheme *apiruntime.Scheme
 var k kube.Kube
 var k8sManager ctrl.Manager
 var ghAuthClient *authfakes.FakeGithubAuthClient
-var gp *gitprovidersfakes.FakeGitProvider
-var appGit *gitfakes.FakeGit
+var gitProvider *gitprovidersfakes.FakeGitProvider
 var configGit *gitfakes.FakeGit
-var appFactory *apputilsfakes.FakeServerAppFactory
+var fakeFactory *servicesfakes.FakeFactory
 
 func bufDialer(context.Context, string) (net.Conn, error) {
 	return lis.Dial()
@@ -128,33 +127,29 @@ var _ = BeforeEach(func() {
 
 	osysClient := osys.New()
 
-	gp = &gitprovidersfakes.FakeGitProvider{}
-	gp.GetDefaultBranchReturns("main", nil)
+	gitProvider = &gitprovidersfakes.FakeGitProvider{}
+	gitProvider.GetDefaultBranchReturns("main", nil)
 
-	appFactory = &apputilsfakes.FakeServerAppFactory{}
-
-	appGit = &gitfakes.FakeGit{}
+	fakeFactory = &servicesfakes.FakeFactory{}
 	configGit = &gitfakes.FakeGit{}
 
-	appFactory.GetAppServiceReturns(&app.App{
-		Context:     context.Background(),
-		AppGit:      appGit,
-		ConfigGit:   configGit,
-		Flux:        flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}}),
-		Kube:        k,
-		Logger:      &loggerfakes.FakeLogger{},
-		Osys:        osysClient,
-		GitProvider: gp,
+	fakeFactory.GetAppServiceReturns(&app.App{
+		Context: context.Background(),
+		Flux:    flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}}),
+		Kube:    k,
+		Logger:  &loggerfakes.FakeLogger{},
 	}, nil)
 
-	appFactory.GetKubeServiceStub = func() (kube.Kube, error) {
+	fakeFactory.GetGitClientsReturns(configGit, gitProvider, nil)
+
+	fakeFactory.GetKubeServiceStub = func() (kube.Kube, error) {
 		return k, nil
 	}
 
 	ghAuthClient = &authfakes.FakeGithubAuthClient{}
 
 	cfg := ApplicationsConfig{
-		AppFactory:       appFactory,
+		Factory:          fakeFactory,
 		JwtClient:        auth.NewJwtClient(secretKey),
 		KubeClient:       k8sClient,
 		GithubAuthClient: ghAuthClient,

@@ -3,6 +3,15 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+
+	"github.com/weaveworks/weave-gitops/cmd/internal"
+	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/kube"
+	"github.com/weaveworks/weave-gitops/pkg/osys"
+	"github.com/weaveworks/weave-gitops/pkg/runner"
+	"github.com/weaveworks/weave-gitops/pkg/services"
+	"github.com/weaveworks/weave-gitops/pkg/services/auth"
 
 	"github.com/fluxcd/go-git-providers/gitprovider"
 	"github.com/pkg/errors"
@@ -13,7 +22,6 @@ import (
 	"github.com/weaveworks/weave-gitops/cmd/gitops/app/remove"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/app/status"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/app/unpause"
-	"github.com/weaveworks/weave-gitops/pkg/apputils"
 	"github.com/weaveworks/weave-gitops/pkg/logger"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 	"github.com/weaveworks/weave-gitops/pkg/utils"
@@ -70,7 +78,11 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	command := args[1]
 	object := args[2]
 
-	appService, appError := apputils.GetAppService(ctx, params.Name, params.Namespace)
+	log := logger.NewCLILogger(os.Stdout)
+	fluxClient := flux.New(osys.New(), &runner.CLIRunner{})
+	factory := services.NewFactory(fluxClient, log)
+
+	appService, appError := factory.GetAppService(ctx)
 	if appError != nil {
 		return fmt.Errorf("failed to create app service: %w", appError)
 	}
@@ -85,16 +97,26 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid command %s", command)
 	}
 
-	logger := apputils.GetLogger()
+	kubeClient, _, kubeErr := kube.NewKubeHTTPClient()
+	if kubeErr != nil {
+		return fmt.Errorf("failed to create kube client: %w", kubeClient)
+	}
+
+	providerClient := internal.NewGitProviderClient(os.Stdout, os.LookupEnv, auth.NewAuthCLIHandler, log)
+
+	_, gitProvider, gitErr := factory.GetGitClients(ctx, providerClient, services.NewGitConfigParamsFromApp(appContent, false))
+	if gitErr != nil {
+		return fmt.Errorf("failed to get git clients: %w", gitErr)
+	}
 
 	switch object {
 	case "commits":
-		commits, err := appService.GetCommits(params, appContent)
+		commits, err := appService.GetCommits(gitProvider, params, appContent)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get commits for app %s", params.Name)
 		}
 
-		printCommitTable(logger, commits)
+		printCommitTable(log, commits)
 	default:
 		_ = cmd.Help()
 		return fmt.Errorf("unkown resource type \"%s\"", object)
