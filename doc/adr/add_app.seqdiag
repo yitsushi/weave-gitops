@@ -1,0 +1,10 @@
+Title: Adding an application
+participant Ron
+participant gitops
+Ron->gitops:gitops app add --name=my-app --config-repo=<url>
+gitops->GitOps Repo:Creates a PR with the Application record
+gitops->Ron:
+Note right of GitOps Repo: Add file .weave-gitops/apps/my-app
+Ron->GitOps Repo:Merges the `add` PR
+Ron->GitOps Repo:Creates a kustomization.yaml at ./apps/my-app/env/staging
+Ron->GitOps Repo:Creates a kustomization.yaml at ./apps/my-app/env/production
