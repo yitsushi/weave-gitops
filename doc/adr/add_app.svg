@@ -1,1 +1,130 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1387.03125px" height="432.546875px" class="sequence simple"><desc>Adding an application</desc><defs><marker viewBox="0 0 5 5" markerWidth="5" markerHeight="5" orient="auto" refX="5" refY="2.5" id="markerArrowBlock"><path d="M 0 0 L 5 2.5 L 0 5 z"/></marker><marker viewBox="0 0 9.6 16" markerWidth="4" markerHeight="16" orient="auto" refX="9.6" refY="8" id="markerArrowOpen"><path d="M 9.6,8 1.92,16 0,13.7 5.76,8 0,2.286 1.92,0 9.6,8 z"/></marker></defs><g class="title"><rect x="10" y="10" width="212.171875" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="15" y="30" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="15">Adding an application</tspan></text></g><g class="actor"><rect x="10" y="49.171875" width="48.890625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="20" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="20">Ron</tspan></text></g><g class="actor"><rect x="10" y="373.375" width="48.890625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="20" y="398.375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="20">Ron</tspan></text></g><line x1="34.4453125" x2="34.4453125" y1="88.34375" y2="373.375" stroke="#000000" fill="none" style="stroke-width: 2;"/><g class="actor"><rect x="477.640625" y="49.171875" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="487.640625" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="487.640625">gitops</tspan></text></g><g class="actor"><rect x="477.640625" y="373.375" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="487.640625" y="398.375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="487.640625">gitops</tspan></text></g><line x1="516.5234375" x2="516.5234375" y1="88.34375" y2="373.375" stroke="#000000" fill="none" style="stroke-width: 2;"/><g class="actor"><rect x="863.453125" y="49.171875" width="116.265625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="873.453125" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="873.453125">GitOpsRepo</tspan></text></g><g class="actor"><rect x="863.453125" y="373.375" width="116.265625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="873.453125" y="398.375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="873.453125">GitOpsRepo</tspan></text></g><line x1="921.5859375" x2="921.5859375" y1="88.34375" y2="373.375" stroke="#000000" fill="none" style="stroke-width: 2;"/><g class="signal"><text x="44.4453125" y="118.7578125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="44.4453125">gitops app add --name=my-app --config-repo=&lt;url&gt;</tspan></text><line x1="34.4453125" x2="516.5234375" y1="127.515625" y2="127.515625" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g><g class="signal"><text x="526.5234375" y="157.9296875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="526.5234375">Creates a PR with the Application record</tspan></text><line x1="516.5234375" x2="921.5859375" y1="166.6875" y2="166.6875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g><g class="signal"><text x="275.484375" y="191.6875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="275.484375"/></text><line x1="516.5234375" x2="34.4453125" y1="186.6875" y2="186.6875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g><g class="note"><rect x="941.5859375" y="206.6875" width="337.3125" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;"/><text x="946.5859375" y="226.6875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="946.5859375">Add file .weave-gitops/apps/my-app</tspan></text></g><g class="signal"><text x="386.375" y="266.2734375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="386.375">Merges the `add` PR</tspan></text><line x1="34.4453125" x2="921.5859375" y1="275.03125" y2="275.03125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g><g class="signal"><text x="203.65625" y="305.4453125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="203.65625">Creates a kustomization.yaml at ./apps/my-app/env/staging</tspan></text><line x1="34.4453125" x2="921.5859375" y1="314.203125" y2="314.203125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g><g class="signal"><text x="189.21875" y="344.6171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;"><tspan x="189.21875">Creates a kustomization.yaml at ./apps/my-app/env/production</tspan></text><line x1="34.4453125" x2="921.5859375" y1="353.375" y2="353.375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="2171.6015625px" height="627.671875px" class="sequence simple">
+    <desc>Adding an application</desc>
+    <defs>
+        <marker viewBox="0 0 5 5" markerWidth="5" markerHeight="5" orient="auto" refX="5" refY="2.5" id="markerArrowBlock">
+            <path d="M 0 0 L 5 2.5 L 0 5 z" />
+        </marker>
+        <marker viewBox="0 0 9.6 16" markerWidth="4" markerHeight="16" orient="auto" refX="9.6" refY="8" id="markerArrowOpen">
+            <path d="M 9.6,8 1.92,16 0,13.7 5.76,8 0,2.286 1.92,0 9.6,8 z" />
+        </marker>
+    </defs>
+    <rect width="100%" height="100%" fill="white" />
+    <g class="title">
+        <rect x="10" y="10" width="212.171875" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="15" y="30" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="15">Adding an application</tspan>
+        </text>
+    </g>
+    <g class="actor">
+        <rect x="10" y="49.171875" width="48.890625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="20" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="20">Ron</tspan>
+        </text>
+    </g>
+    <g class="actor">
+        <rect x="10" y="568.5" width="48.890625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="20" y="593.5" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="20">Ron</tspan>
+        </text>
+    </g>
+    <line x1="34.4453125" x2="34.4453125" y1="88.34375" y2="568.5" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <g class="actor">
+        <rect x="978.21875" y="49.171875" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="988.21875" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="988.21875">gitops</tspan>
+        </text>
+    </g>
+    <g class="actor">
+        <rect x="978.21875" y="568.5" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="988.21875" y="593.5" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="988.21875">gitops</tspan>
+        </text>
+    </g>
+    <line x1="1017.1015625" x2="1017.1015625" y1="88.34375" y2="568.5" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <g class="actor">
+        <rect x="1628.7578125" y="49.171875" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1638.7578125" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1638.7578125">GitOps Repo</tspan>
+        </text>
+    </g>
+    <g class="actor">
+        <rect x="1628.7578125" y="568.5" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1638.7578125" y="593.5" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1638.7578125">GitOps Repo</tspan>
+        </text>
+    </g>
+    <line x1="1691.7109375" x2="1691.7109375" y1="88.34375" y2="568.5" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <g class="signal">
+        <text x="59.4453125" y="122.9296875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="59.4453125">Creates a User Repo with a kustomization.yaml file in it at ./base/my-app</tspan>
+        </text>
+        <line x1="34.4453125" x2="54.4453125" y1="108.34375" y2="108.34375" stroke="#000000" fill="none" style="stroke-width: 2;" />
+        <line x1="54.4453125" x2="54.4453125" y1="108.34375" y2="132.515625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+        <line x1="54.4453125" x2="34.4453125" y1="132.515625" y2="132.515625" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="59.4453125" y="162.1015625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="59.4453125">Creates an overlay at the ./overlays/debug/</tspan>
+        </text>
+        <line x1="34.4453125" x2="54.4453125" y1="147.515625" y2="147.515625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+        <line x1="54.4453125" x2="54.4453125" y1="147.515625" y2="171.6875" stroke="#000000" fill="none" style="stroke-width: 2;" />
+        <line x1="54.4453125" x2="34.4453125" y1="171.6875" y2="171.6875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="44.4453125" y="197.1015625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="44.4453125">gitops add app my-app --url=&lt;User Repo URL&gt; --path=./base/my-app --gitops-repo-url=&lt;GitOps Repo URL&gt;</tspan>
+        </text>
+        <line x1="34.4453125" x2="1017.1015625" y1="205.859375" y2="205.859375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="1161.875" y="236.2734375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1161.875">Creates a PR with the Application record</tspan>
+        </text>
+        <line x1="1017.1015625" x2="1691.7109375" y1="245.03125" y2="245.03125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="note">
+        <rect x="1711.7109375" y="265.03125" width="346.9375" height="86.78125" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1716.7109375" y="285.03125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1716.7109375">Add files .weave-gitops/apps/my-app</tspan>
+            <tspan dy="1.2em" x="1716.7109375">my-app-source.yaml</tspan>
+            <tspan dy="1.2em" x="1716.7109375">my-app-kustomization.yaml</tspan>
+            <tspan dy="1.2em" x="1716.7109375">kustomization.yaml</tspan>
+        </text>
+    </g>
+    <g class="signal">
+        <text x="525.7734375" y="376.8125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="525.7734375" />
+        </text>
+        <line x1="1017.1015625" x2="34.4453125" y1="371.8125" y2="371.8125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="771.4375" y="402.2265625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="771.4375">Merges the `add` PR</tspan>
+        </text>
+        <line x1="34.4453125" x2="1691.7109375" y1="410.984375" y2="410.984375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="203.28125" y="441.3984375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="203.28125">gitops add env staging my-app --kustomization-path=./overlays/debug</tspan>
+        </text>
+        <line x1="34.4453125" x2="1017.1015625" y1="450.15625" y2="450.15625" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="1027.1015625" y="480.5703125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1027.1015625">Creates a PR with a new kustomization.yaml =&gt; path: ./overlays/debug</tspan>
+        </text>
+        <line x1="1017.1015625" x2="1691.7109375" y1="489.328125" y2="489.328125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="525.7734375" y="514.328125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="525.7734375" />
+        </text>
+        <line x1="1017.1015625" x2="34.4453125" y1="509.328125" y2="509.328125" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+    <g class="signal">
+        <text x="776.25" y="539.7421875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="776.25">Merge `add env` PR</tspan>
+        </text>
+        <line x1="34.4453125" x2="1691.7109375" y1="548.5" y2="548.5" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+    </g>
+</svg>
