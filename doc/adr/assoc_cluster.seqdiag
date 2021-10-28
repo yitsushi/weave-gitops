@@ -1,21 +1,21 @@
 Title: Initializing GitOps and associating a cluster
 participant Carol
 participant gitops
-Carol->gitops:gitops init
-gitops->GitOps Repo:Creates a GitOps repo
-Note right of GitOps Repo:Q:Works with an existing repo?
-gitops->GitOps Repo: Creates a PR with the directory structure
-Note right of GitOps Repo: .weave-gitops/apps\n.weave-gitops/clusters\n.weave-gitops/profiles
-Note right of GitOps Repo:Q:What is in these directories? .keep files?
-Note right of GitOps Repo:D:Build init into install
-gitops->Carol:
-Carol->GitOps Repo: Carol Merges the PR
-Carol->Carol:Carol sets her kubectl context to `staging`
-Carol->gitops: gitops install
+#Carol->gitops:gitops init
+#gitops->GitOps Repo:Creates a GitOps repo
+#Note right of GitOps Repo:Q:Works with an existing repo?
+#gitops->GitOps Repo: Creates a PR with the directory structure
+#ote right of GitOps Repo: .weave-gitops/apps\n.weave-gitops/clusters\n.weave-gitops/profiles
+#Note right of GitOps Repo:Q:What is in these directories? .keep files?
+#gitops->Carol:
+#Carol->GitOps Repo: Carol Merges the PR
+Carol->Carol:Carol sets her kubectl context to `staging-cluster`
+Carol->gitops: gitops install --gitops-repo-url=<url>
 gitops->GitOps Repo:Creates a PR with a cluster record
-Note right of GitOps Repo:Add files to ./clusters/staging/system/:\nflux-source-resource.yaml\nkustomization.yaml\nsystem-flux-kustomization-resource.yaml\nuser-flux-kustomization-resource.yaml
+Note right of GitOps Repo:Add files to ./clusters/staging-cluster/system/:\nflux-source-resource.yaml\nkustomization.yaml\nsystem-flux-kustomization-resource.yaml\nuser-flux-kustomization-resource.yaml\ngitops-toolkit.yaml
+Note right of GitOps Repo:Add file: ./clusters/staging-cluster/user/.keep
 gitops->Staging Cluster:Apply GitOps Runtime (flux controllers)
-gitops->Staging Cluster:Apply GitOps Automation (Kustomization) for ./clusters/staging/system
+gitops->Staging Cluster:Apply GitOps Automation (Kustomization) for ./clusters/staging-cluster/system
 gitops->Carol:
 Carol->GitOps Repo:Carol merges the cluster PR
 GitOps Repo-->Flux:Flux picks up the change in the repo

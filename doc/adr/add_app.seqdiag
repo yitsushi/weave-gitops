@@ -1,10 +1,17 @@
 Title: Adding an application
 participant Ron
 participant gitops
-Ron->gitops:gitops app add --name=my-app --config-repo=<url>
+Ron->Ron:Creates a User Repo with a kustomization.yaml file in it at ./base/my-app
+Ron->Ron:Creates an overlay at the ./overlays/debug/
+Ron->gitops:gitops add app my-app --url=<User Repo URL> --path=./base/my-app --gitops-repo-url=<GitOps Repo URL>
 gitops->GitOps Repo:Creates a PR with the Application record
+Note right of GitOps Repo: Add files .weave-gitops/apps/my-app\nmy-app-source.yaml\nmy-app-kustomization.yaml\nkustomization.yaml
+#gitops->GitOps Repo:Add/edit .weave-gitops/clusters/staging/kustomization.yaml
+#Note right of GitOps Repo:Adds resource entry for ./apps/my-app
 gitops->Ron:
-Note right of GitOps Repo: Add file .weave-gitops/apps/my-app
 Ron->GitOps Repo:Merges the `add` PR
-Ron->GitOps Repo:Creates a kustomization.yaml at ./apps/my-app/env/staging
-Ron->GitOps Repo:Creates a kustomization.yaml at ./apps/my-app/env/production
+#Ron->GitOps Repo:Creates a kustomization.yaml at ./apps/my-app/env/staging
+Ron->gitops:gitops add env staging my-app --kustomization-path=./overlays/debug
+gitops->GitOps Repo:Creates a PR with a new kustomization.yaml => path: ./overlays/debug
+gitops->Ron:
+Ron->GitOps Repo:Merge `add env` PR
