@@ -1,14 +1,6 @@
 Title: Initializing GitOps and associating a cluster
 participant Carol
 participant gitops
-#Carol->gitops:gitops init
-#gitops->GitOps Repo:Creates a GitOps repo
-#Note right of GitOps Repo:Q:Works with an existing repo?
-#gitops->GitOps Repo: Creates a PR with the directory structure
-#ote right of GitOps Repo: .weave-gitops/apps\n.weave-gitops/clusters\n.weave-gitops/profiles
-#Note right of GitOps Repo:Q:What is in these directories? .keep files?
-#gitops->Carol:
-#Carol->GitOps Repo: Carol Merges the PR
 Carol->Carol:Carol sets her kubectl context to `staging-cluster`
 Carol->gitops: gitops install --gitops-repo-url=<url>
 gitops->GitOps Repo:Creates a PR with a cluster record
