@@ -14,10 +14,10 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
 	"github.com/weaveworks/weave-gitops/pkg/logger"
 	"github.com/weaveworks/weave-gitops/pkg/logger/loggerfakes"
+	"github.com/weaveworks/weave-gitops/pkg/models"
 	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/osys/osysfakes"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
-	"github.com/weaveworks/weave-gitops/pkg/services/app"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -48,7 +48,7 @@ var _ = Describe("auth", func() {
 	Describe("AuthService", func() {
 		var (
 			ctx        context.Context
-			secretName app.GeneratedSecretName
+			secretName models.GeneratedSecretName
 			gp         gitprovidersfakes.FakeGitProvider
 			osysClient *osys.OsysClient
 			as         AuthService
@@ -56,7 +56,7 @@ var _ = Describe("auth", func() {
 		)
 		BeforeEach(func() {
 			ctx = context.Background()
-			secretName = app.CreateRepoSecretName(testClustername, repoUrl.String())
+			secretName = models.CreateRepoSecretName(testClustername, repoUrl.String())
 			Expect(err).NotTo(HaveOccurred())
 			osysClient = osys.New()
 			gp = gitprovidersfakes.FakeGitProvider{}

@@ -610,7 +610,7 @@ var _ = Describe("ApplicationsServer", func() {
 
 			osysClient := osys.New()
 
-			appFactory.GetAppServiceReturns(&app.App{
+			appFactory.GetAppServiceReturns(&app.AppSvc{
 				Context:     ctx,
 				AppGit:      appGit,
 				ConfigGit:   configGit,
@@ -682,15 +682,6 @@ var _ = Describe("ApplicationsServer", func() {
 				wego.DeploymentTypeKustomize,
 				true,
 				1,
-				0),
-			Entry(
-				"kustomize, no repo config, auto merge",
-				"ssh://git@github.com/foo/bar",
-				"NONE",
-				wego.SourceTypeGit,
-				wego.DeploymentTypeKustomize,
-				true,
-				0,
 				0))
 	})
 

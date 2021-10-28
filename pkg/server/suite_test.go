@@ -104,7 +104,7 @@ var _ = BeforeEach(func() {
 	appGit = &gitfakes.FakeGit{}
 	configGit = &gitfakes.FakeGit{}
 
-	appFactory.GetAppServiceReturns(&app.App{
+	appFactory.GetAppServiceReturns(&app.AppSvc{
 		Context:     context.Background(),
 		AppGit:      appGit,
 		ConfigGit:   configGit,

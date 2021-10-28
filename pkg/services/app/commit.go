@@ -18,7 +18,7 @@ type CommitParams struct {
 }
 
 // GetCommits gets a list of commits from the repo/branch saved in the app manifest
-func (a *App) GetCommits(params CommitParams, application *wego.Application) ([]gitprovider.Commit, error) {
+func (a *AppSvc) GetCommits(params CommitParams, application *wego.Application) ([]gitprovider.Commit, error) {
 	if application.Spec.SourceType == wego.SourceTypeHelm {
 		return nil, fmt.Errorf("unable to get commits for a helm chart")
 	}

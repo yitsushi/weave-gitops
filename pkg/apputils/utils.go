@@ -15,6 +15,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth"
+	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -111,7 +112,8 @@ func GetAppService(ctx context.Context, appName string, namespace string) (app.A
 		return nil, fmt.Errorf("error getting git clients: %w", err)
 	}
 
-	return app.New(ctx, clients.Logger, appClient, configClient, gitProvider, clients.Flux, clients.Kube, clients.Osys), nil
+	return app.New(ctx, clients.Logger, appClient, configClient, gitProvider, clients.Flux, clients.Kube, clients.Osys,
+		automation.NewAutomationService(gitProvider, clients.Flux, clients.Logger)), nil
 }
 
 func GetAppServiceForAdd(ctx context.Context, url, configUrl, namespace string, isHelmRepository bool, dryRun bool) (app.AppService, error) {
@@ -125,7 +127,8 @@ func GetAppServiceForAdd(ctx context.Context, url, configUrl, namespace string, 
 		return nil, fmt.Errorf("error getting git clients: %w", err)
 	}
 
-	return app.New(ctx, clients.Logger, appClient, configClient, gitProvider, clients.Flux, clients.Kube, clients.Osys), nil
+	return app.New(ctx, clients.Logger, appClient, configClient, gitProvider, clients.Flux, clients.Kube, clients.Osys,
+		automation.NewAutomationService(gitProvider, clients.Flux, clients.Logger)), nil
 }
 
 func getGitClientsForApp(ctx context.Context, appName string, namespace string, dryRun bool) (git.Git, git.Git, gitproviders.GitProvider, error) {
