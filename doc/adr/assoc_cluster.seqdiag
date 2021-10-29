@@ -2,7 +2,7 @@ Title: Initializing GitOps and associating a cluster
 participant Carol
 participant gitops
 Carol->Carol:Carol sets her kubectl context to `staging-cluster`
-Carol->gitops: gitops install --gitops-repo-url=<url>
+Carol->gitops: gitops install --gitops-repo-url=github.com/my-org/gitops-repo
 gitops->GitOps Repo:Creates a PR with a cluster record
 Note right of GitOps Repo:Add files to ./clusters/staging-cluster/system/:\nflux-source-resource.yaml\nkustomization.yaml\nsystem-flux-kustomization-resource.yaml\nuser-flux-kustomization-resource.yaml\ngitops-toolkit.yaml
 Note right of GitOps Repo:Add file: ./clusters/staging-cluster/user/.keep

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1879.5px" height="695.234375px" class="sequence simple">
+<svg xmlns="http://www.w3.org/2000/svg" width="1965.390625px" height="695.234375px" class="sequence simple">
     <desc>Initializing GitOps and associating a cluster</desc>
     <defs>
         <marker viewBox="0 0 5 5" markerWidth="5" markerHeight="5" orient="auto" refX="5" refY="2.5" id="markerArrowBlock">
@@ -8,7 +8,7 @@
             <path d="M 9.6,8 1.92,16 0,13.7 5.76,8 0,2.286 1.92,0 9.6,8 z" />
         </marker>
     </defs>
-    <rect width="100%" height="100%" fill="white" />
+    <rect height="100%" width="100%" fill="white" />
     <g class="title">
         <rect x="10" y="10" width="443.203125" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
         <text x="15" y="30" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
@@ -29,57 +29,57 @@
     </g>
     <line x1="44.0703125" x2="44.0703125" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
     <g class="actor">
-        <rect x="536.15625" y="49.171875" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="546.15625" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="546.15625">gitops</tspan>
+        <rect x="622.046875" y="49.171875" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="632.046875" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="632.046875">gitops</tspan>
         </text>
     </g>
     <g class="actor">
-        <rect x="536.15625" y="636.0625" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="546.15625" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="546.15625">gitops</tspan>
+        <rect x="622.046875" y="636.0625" width="77.765625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="632.046875" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="632.046875">gitops</tspan>
         </text>
     </g>
-    <line x1="575.0390625" x2="575.0390625" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <line x1="660.9296875" x2="660.9296875" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
     <g class="actor">
-        <rect x="859.3984375" y="49.171875" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="869.3984375" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="869.3984375">GitOps Repo</tspan>
-        </text>
-    </g>
-    <g class="actor">
-        <rect x="859.3984375" y="636.0625" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="869.3984375" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="869.3984375">GitOps Repo</tspan>
-        </text>
-    </g>
-    <line x1="922.3515625" x2="922.3515625" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
-    <g class="actor">
-        <rect x="1352.2265625" y="49.171875" width="164.40625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="1362.2265625" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1362.2265625">Staging Cluster</tspan>
+        <rect x="945.2890625" y="49.171875" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="955.2890625" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="955.2890625">GitOps Repo</tspan>
         </text>
     </g>
     <g class="actor">
-        <rect x="1352.2265625" y="636.0625" width="164.40625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="1362.2265625" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1362.2265625">Staging Cluster</tspan>
+        <rect x="945.2890625" y="636.0625" width="125.90625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="955.2890625" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="955.2890625">GitOps Repo</tspan>
         </text>
     </g>
-    <line x1="1434.4296875" x2="1434.4296875" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <line x1="1008.2421875" x2="1008.2421875" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
     <g class="actor">
-        <rect x="1790.984375" y="49.171875" width="58.515625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="1800.984375" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1800.984375">Flux</tspan>
+        <rect x="1438.1171875" y="49.171875" width="164.40625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1448.1171875" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1448.1171875">Staging Cluster</tspan>
         </text>
     </g>
     <g class="actor">
-        <rect x="1790.984375" y="636.0625" width="58.515625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="1800.984375" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1800.984375">Flux</tspan>
+        <rect x="1438.1171875" y="636.0625" width="164.40625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1448.1171875" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1448.1171875">Staging Cluster</tspan>
         </text>
     </g>
-    <line x1="1820.2421875" x2="1820.2421875" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <line x1="1520.3203125" x2="1520.3203125" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
+    <g class="actor">
+        <rect x="1876.875" y="49.171875" width="58.515625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1886.875" y="74.171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1886.875">Flux</tspan>
+        </text>
+    </g>
+    <g class="actor">
+        <rect x="1876.875" y="636.0625" width="58.515625" height="39.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1886.875" y="661.0625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1886.875">Flux</tspan>
+        </text>
+    </g>
+    <line x1="1906.1328125" x2="1906.1328125" y1="88.34375" y2="636.0625" stroke="#000000" fill="none" style="stroke-width: 2;" />
     <g class="signal">
         <text x="69.0703125" y="122.9296875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
             <tspan x="69.0703125">Carol sets her kubectl context to `staging-cluster`</tspan>
@@ -89,68 +89,68 @@
         <line x1="64.0703125" x2="44.0703125" y1="132.515625" y2="132.515625" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="126.6484375" y="157.9296875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="126.6484375">gitops install --gitops-repo-url=&lt;url&gt;</tspan>
+        <text x="54.0703125" y="157.9296875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="54.0703125">gitops install --gitops-repo-url=github.com/my-org/gitops-repo</tspan>
         </text>
-        <line x1="44.0703125" x2="575.0390625" y1="166.6875" y2="166.6875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="44.0703125" x2="660.9296875" y1="166.6875" y2="166.6875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="585.0390625" y="197.1015625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="585.0390625">Creates a PR with a cluster record</tspan>
+        <text x="670.9296875" y="197.1015625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="670.9296875">Creates a PR with a cluster record</tspan>
         </text>
-        <line x1="575.0390625" x2="922.3515625" y1="205.859375" y2="205.859375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="660.9296875" x2="1008.2421875" y1="205.859375" y2="205.859375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="note">
-        <rect x="942.3515625" y="225.859375" width="472.078125" height="125.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="947.3515625" y="245.859375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="947.3515625">Add files to ./clusters/staging-cluster/system/:</tspan>
-            <tspan dy="1.2em" x="947.3515625">flux-source-resource.yaml</tspan>
-            <tspan dy="1.2em" x="947.3515625">kustomization.yaml</tspan>
-            <tspan dy="1.2em" x="947.3515625">system-flux-kustomization-resource.yaml</tspan>
-            <tspan dy="1.2em" x="947.3515625">user-flux-kustomization-resource.yaml</tspan>
-            <tspan dy="1.2em" x="947.3515625">gitops-toolkit.yaml</tspan>
+        <rect x="1028.2421875" y="225.859375" width="472.078125" height="125.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1033.2421875" y="245.859375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1033.2421875">Add files to ./clusters/staging-cluster/system/:</tspan>
+            <tspan dy="1.2em" x="1033.2421875">flux-source-resource.yaml</tspan>
+            <tspan dy="1.2em" x="1033.2421875">kustomization.yaml</tspan>
+            <tspan dy="1.2em" x="1033.2421875">system-flux-kustomization-resource.yaml</tspan>
+            <tspan dy="1.2em" x="1033.2421875">user-flux-kustomization-resource.yaml</tspan>
+            <tspan dy="1.2em" x="1033.2421875">gitops-toolkit.yaml</tspan>
         </text>
     </g>
     <g class="note">
-        <rect x="942.3515625" y="371.03125" width="462.453125" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
-        <text x="947.3515625" y="391.03125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="947.3515625">Add file: ./clusters/staging-cluster/user/.keep</tspan>
+        <rect x="1028.2421875" y="371.03125" width="462.453125" height="29.171875" stroke="#000000" fill="#ffffff" style="stroke-width: 2;" />
+        <text x="1033.2421875" y="391.03125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1033.2421875">Add file: ./clusters/staging-cluster/user/.keep</tspan>
         </text>
     </g>
     <g class="signal">
-        <text x="817.015625" y="430.6171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="817.015625">Apply GitOps Runtime (flux controllers)</tspan>
+        <text x="902.90625" y="430.6171875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="902.90625">Apply GitOps Runtime (flux controllers)</tspan>
         </text>
-        <line x1="575.0390625" x2="1434.4296875" y1="439.375" y2="439.375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="660.9296875" x2="1520.3203125" y1="439.375" y2="439.375" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="634.109375" y="469.7890625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="634.109375">Apply GitOps Automation (Kustomization) for ./clusters/staging-cluster/system</tspan>
+        <text x="720" y="469.7890625" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="720">Apply GitOps Automation (Kustomization) for ./clusters/staging-cluster/system</tspan>
         </text>
-        <line x1="575.0390625" x2="1434.4296875" y1="478.546875" y2="478.546875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="660.9296875" x2="1520.3203125" y1="478.546875" y2="478.546875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="309.5546875" y="503.546875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="309.5546875" />
+        <text x="352.5" y="503.546875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="352.5" />
         </text>
-        <line x1="575.0390625" x2="44.0703125" y1="498.546875" y2="498.546875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="660.9296875" x2="44.0703125" y1="498.546875" y2="498.546875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="353.0625" y="528.9609375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="353.0625">Carol merges the cluster PR</tspan>
+        <text x="396.0078125" y="528.9609375" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="396.0078125">Carol merges the cluster PR</tspan>
         </text>
-        <line x1="44.0703125" x2="922.3515625" y1="537.71875" y2="537.71875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="44.0703125" x2="1008.2421875" y1="537.71875" y2="537.71875" stroke="#000000" fill="none" style="stroke-width: 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="1198.015625" y="568.1328125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1198.015625">Flux picks up the change in the repo</tspan>
+        <text x="1283.90625" y="568.1328125" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1283.90625">Flux picks up the change in the repo</tspan>
         </text>
-        <line x1="922.3515625" x2="1820.2421875" y1="576.890625" y2="576.890625" stroke="#000000" fill="none" style="stroke-width: 2; stroke-dasharray: 6, 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="1008.2421875" x2="1906.1328125" y1="576.890625" y2="576.890625" stroke="#000000" fill="none" style="stroke-width: 2; stroke-dasharray: 6, 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
     <g class="signal">
-        <text x="1444.4296875" y="607.3046875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
-            <tspan x="1444.4296875">Flux applies the change to the cluster</tspan>
+        <text x="1530.3203125" y="607.3046875" style="font-size: 16px; font-family: &quot;Andale Mono&quot;, monospace;">
+            <tspan x="1530.3203125">Flux applies the change to the cluster</tspan>
         </text>
-        <line x1="1820.2421875" x2="1434.4296875" y1="616.0625" y2="616.0625" stroke="#000000" fill="none" style="stroke-width: 2; stroke-dasharray: 6, 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
+        <line x1="1906.1328125" x2="1520.3203125" y1="616.0625" y2="616.0625" stroke="#000000" fill="none" style="stroke-width: 2; stroke-dasharray: 6, 2; marker-end: url(&quot;#markerArrowBlock&quot;);" />
     </g>
 </svg>
