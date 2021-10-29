@@ -1,7 +1,8 @@
 Title: Deploying an Application from Staging to Prod
 participant Ron
 participant gitops
-Ron->gitops:gitops deploy app my-app:staging --cluster=staging-cluster
+Ron->gitops:Deploy()
+Note right of Ron:{\n appName: my-app, \n env: staging,\n cluster: staging-cluster, \n}
 gitops->GitOps Repo:PR to add kustomization.yaml to cluster
 Note right of GitOps Repo:Add file at ./clusters/staging-cluster/user/kustomization.yaml\nAdd `resource`: apps/my-app/env/staging
 gitops->Ron:
@@ -9,7 +10,8 @@ Ron->GitOps Repo:Merges `staging deploy` PR
 GitOps Repo-->Flux:Flux recieves the change to via the cluster Automation
 Flux-->Staging Cluster:Flux applies the change to the cluster
 Ron->Staging Cluster:Ron views the change on staging and decides it looks good
-Ron->gitops:gitops deploy app my-app --cluster=production-cluster
+Ron->gitops:Deploy()
+Note right of Ron:{\n appName: my-app,\n cluster: production-cluster, \n}
 Note right of gitops: No overlay specified
 gitops->GitOps Repo:PR to add kustomization.yaml to cluster
 Note right of GitOps Repo:Add file at ./clusters/production-cluster/user/kustomization.yaml\nAdd `resource`: apps/my-app

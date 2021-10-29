@@ -3,12 +3,15 @@ participant Ron
 participant gitops
 Ron->Ron:Creates a User Repo with a kustomization.yaml file in it at ./base/my-app
 Ron->Ron:Creates an overlay at the ./overlays/debug/: `env: LOG_LEVEL=debug`
-Ron->gitops:gitops add app my-app --url=<User Repo URL> --path=./base/my-app --gitops-repo-url=<GitOps Repo URL>
+Ron->gitops:AddApp()
+Note right of Ron:{\n name: my-app,\n url: github.com/my-org/my-app,\n path: "./base/my-app",\n gitOpsRepoURL: <GitOps Repo URL>\n}
 gitops->GitOps Repo:Creates a PR with the Application record
 Note right of GitOps Repo: Add files .weave-gitops/apps/my-app\nmy-app-source.yaml\nmy-app-kustomization.yaml\nkustomization.yaml
 gitops->Ron:
-Ron->GitOps Repo:Merges the `add` PR
-Ron->gitops:gitops add env staging my-app --kustomization-path=./overlays/debug
+Ron->GitOps Repo:Merges the `AddApp` PR
+Ron->gitops:AddEnv()
+Note right of Ron:{\n name: staging, \nappName:my-app, \ngitOpsRepoURL:<GitOps Repo URL>, \nkustomizationPath: ./overlays/debug \n}
 gitops->GitOps Repo:Creates a PR with a new kustomization.yaml => path: ./overlays/debug
+Note right of GitOpsRepo:Adds a kustomization.yaml file to ./apps/my-app/env/staging
 gitops->Ron:
-Ron->GitOps Repo:Merge `add env` PR
+Ron->GitOps Repo:Merge `AddEnv` PR
