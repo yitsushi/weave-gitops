@@ -116,8 +116,10 @@ func RestConfig() (*rest.Config, string, error) {
 			return nil, "", fmt.Errorf("could not create rest config: %w", err)
 		}
 	} else {
-		// TODO when running in a cluster and not used for bootstrapping, what is the cluster name used for?
-		clusterName = config.Host
+		// When running in a cluster and not used for bootstrapping,
+		// clusterName is used for generating secret names.
+		clusterName = "in-cluster"
+
 	}
 
 	return config, clusterName, nil

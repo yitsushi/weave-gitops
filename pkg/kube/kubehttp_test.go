@@ -344,6 +344,12 @@ metadata:
 			Expect(err).To(HaveOccurred(), "Should receive an error about no current context ")
 
 		})
+		It("gives a valid cluster name when in cluster", func() {
+			kube.InClusterConfig = func() (*rest.Config, error) { return &rest.Config{Host: "https://10.96.0.1:443"}, nil }
+			_, cname, err := kube.RestConfig()
+			Expect(err).NotTo(HaveOccurred(), "Should have created an in-cluster rest config")
+			Expect(cname).To(Equal("in-cluster"))
+		})
 	})
 
 	Describe("GetResouce", func() {
