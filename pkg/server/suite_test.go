@@ -20,6 +20,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/services/applicationv2"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth/authfakes"
+	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	"github.com/weaveworks/weave-gitops/pkg/testutils"
 
 	. "github.com/onsi/ginkgo"
@@ -104,15 +105,19 @@ var _ = BeforeEach(func() {
 	appGit = &gitfakes.FakeGit{}
 	configGit = &gitfakes.FakeGit{}
 
+	fluxClient := flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}})
+	logger := &loggerfakes.FakeLogger{}
+
 	appFactory.GetAppServiceReturns(&app.AppSvc{
 		Context:     context.Background(),
 		AppGit:      appGit,
 		ConfigGit:   configGit,
-		Flux:        flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}}),
+		Flux:        fluxClient,
 		Kube:        k,
-		Logger:      &loggerfakes.FakeLogger{},
+		Logger:      logger,
 		Osys:        osysClient,
 		GitProvider: gp,
+		Automation:  automation.NewAutomationService(gp, fluxClient, logger),
 	}, nil)
 
 	appFactory.GetKubeServiceStub = func() (kube.Kube, error) {

@@ -273,6 +273,7 @@ func (s *applicationServer) AddApplication(ctx context.Context, msg *pb.AddAppli
 		Namespace: msg.Namespace,
 		Token:     token.AccessToken,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("could not create app service: %w", err)
 	}
@@ -352,7 +353,7 @@ func (s *applicationServer) SyncApplication(ctx context.Context, msg *pb.SyncApp
 		}, fmt.Errorf("failed to create kube service: %w", err)
 	}
 
-	appSrv := &app.App{
+	appSrv := &app.AppSvc{
 		Kube:  kube,
 		Clock: clock.New(),
 	}

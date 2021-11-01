@@ -44,6 +44,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
+	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	fakelogr "github.com/weaveworks/weave-gitops/pkg/vendorfakes/logr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -609,16 +610,19 @@ var _ = Describe("ApplicationsServer", func() {
 			name = "my-app"
 
 			osysClient := osys.New()
+			fluxClient := flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}})
+			log := &loggerfakes.FakeLogger{}
 
 			appFactory.GetAppServiceReturns(&app.AppSvc{
 				Context:     ctx,
 				AppGit:      appGit,
 				ConfigGit:   configGit,
-				Flux:        flux.New(osysClient, &testutils.LocalFluxRunner{Runner: &runner.CLIRunner{}}),
+				Flux:        fluxClient,
 				Kube:        fakeKube,
-				Logger:      &loggerfakes.FakeLogger{},
+				Logger:      log,
 				Osys:        osysClient,
 				GitProvider: gp,
+				Automation:  automation.NewAutomationService(gp, fluxClient, log),
 			}, nil)
 
 			appFactory.GetKubeServiceReturns(fakeKube, nil)
@@ -668,7 +672,7 @@ var _ = Describe("ApplicationsServer", func() {
 			Entry(
 				"kustomize, app repo config, auto merge",
 				"ssh://git@github.com/foo/bar",
-				"",
+				"ssh://git@github.com/foo/bar",
 				wego.SourceTypeGit,
 				wego.DeploymentTypeKustomize,
 				true,
