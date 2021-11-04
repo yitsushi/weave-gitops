@@ -16,6 +16,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
+	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	"github.com/weaveworks/weave-gitops/pkg/services/gitopswriter"
 	"github.com/weaveworks/weave-gitops/pkg/testutils"
 	"github.com/weaveworks/weave-gitops/pkg/utils"
@@ -137,111 +138,7 @@ var _ = Describe("Add", func() {
 			}
 		})
 
-		Describe("generates source manifest", func() {
-			It("creates GitRepository when source type is git", func() {
-				addParams.SourceType = wego.SourceTypeGit
-				err := appSrv.Add(addParams)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(fluxClient.CreateSourceGitCallCount()).To(Equal(1))
-
-				name, url, branch, secretRef, namespace := fluxClient.CreateSourceGitArgsForCall(0)
-				Expect(name).To(Equal("bar"))
-				Expect(url.String()).To(Equal("ssh://git@github.com/foo/bar.git"))
-				Expect(branch).To(Equal("main"))
-				Expect(secretRef).To(Equal("wego-test-cluster-bar"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-			})
-
-			It("creates HelmRepository when source type is helm", func() {
-				addParams.Url = "https://charts.kube-ops.io"
-				addParams.Chart = "loki"
-				addParams.AppConfigUrl = "ssh://git@github.com/owner/config-repo.git"
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateSourceHelmCallCount()).To(Equal(1))
-
-				name, url, namespace := fluxClient.CreateSourceHelmArgsForCall(0)
-				Expect(name).To(Equal("loki"))
-				Expect(url).To(Equal("https://charts.kube-ops.io"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-			})
-		})
-
 		Describe("generates application goat", func() {
-			It("creates a kustomization if deployment type kustomize", func() {
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateKustomizationCallCount()).To(Equal(1))
-
-				name, source, path, namespace := fluxClient.CreateKustomizationArgsForCall(0)
-				Expect(name).To(Equal("bar"))
-				Expect(source).To(Equal("bar"))
-				Expect(path).To(Equal("./kustomize"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-			})
-
-			It("creates helm release using a helm repository if source type is helm", func() {
-				addParams.Url = "https://charts.kube-ops.io"
-				addParams.Chart = "loki"
-				addParams.AppConfigUrl = "ssh://github.com/owner/repo"
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateHelmReleaseHelmRepositoryCallCount()).To(Equal(1))
-
-				name, chart, namespace, targetNamespace := fluxClient.CreateHelmReleaseHelmRepositoryArgsForCall(0)
-				Expect(name).To(Equal("loki"))
-				Expect(chart).To(Equal("loki"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-				Expect(targetNamespace).To(Equal(""))
-			})
-
-			It("creates a helm release using a git source if source type is git", func() {
-				addParams.Path = "./charts/my-chart"
-				addParams.DeploymentType = string(wego.DeploymentTypeHelm)
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateHelmReleaseGitRepositoryCallCount()).To(Equal(1))
-
-				name, source, path, namespace, targetNamespace := fluxClient.CreateHelmReleaseGitRepositoryArgsForCall(0)
-				Expect(name).To(Equal("bar"))
-				Expect(source).To(Equal("bar"))
-				Expect(path).To(Equal("./charts/my-chart"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-				Expect(targetNamespace).To(Equal(""))
-			})
-
-			It("creates helm release for helm repository with target namespace if source type is helm", func() {
-				addParams.Url = "https://charts.kube-ops.io"
-				addParams.Chart = "loki"
-				addParams.HelmReleaseTargetNamespace = "sock-shop"
-				addParams.AppConfigUrl = "ssh://git@github.com/owner/config-repo.git"
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateHelmReleaseHelmRepositoryCallCount()).To(Equal(1))
-
-				name, chart, namespace, targetNamespace := fluxClient.CreateHelmReleaseHelmRepositoryArgsForCall(0)
-				Expect(name).To(Equal("loki"))
-				Expect(chart).To(Equal("loki"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-				Expect(targetNamespace).To(Equal("sock-shop"))
-			})
-
-			It("creates a helm release for git repository with target namespace if source type is git", func() {
-				addParams.Path = "./charts/my-chart"
-				addParams.DeploymentType = string(wego.DeploymentTypeHelm)
-				addParams.HelmReleaseTargetNamespace = "sock-shop"
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateHelmReleaseGitRepositoryCallCount()).To(Equal(1))
-
-				name, source, path, namespace, targetNamespace := fluxClient.CreateHelmReleaseGitRepositoryArgsForCall(0)
-				Expect(name).To(Equal("bar"))
-				Expect(source).To(Equal("bar"))
-				Expect(path).To(Equal("./charts/my-chart"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-				Expect(targetNamespace).To(Equal("sock-shop"))
-			})
-
 			It("validates namespace passed as target namespace", func() {
 				addParams.Url = "https://charts.kube-ops.io"
 				addParams.Chart = "loki"
@@ -277,6 +174,60 @@ var _ = Describe("Add", func() {
 
 				Expect(appSrv.Add(addParams)).ShouldNot(Succeed())
 			})
+
+			It("clones the repo to a temp dir", func() {
+				err := appSrv.Add(addParams)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(gitClient.CloneCallCount()).To(Equal(1))
+				_, repoDir, url, branch := gitClient.CloneArgsForCall(0)
+
+				Expect(repoDir).To(ContainSubstring("user-repo-"))
+				Expect(url).To(Equal("ssh://git@github.com/foo/bar.git"))
+				Expect(branch).To(Equal("main"))
+			})
+
+			It("writes the files to the disk", func() {
+				fluxClient.CreateSourceGitReturns(dummyGitSource, nil)
+				fluxClient.CreateKustomizationReturns([]byte("kustomization"), nil)
+
+				err := appSrv.Add(addParams)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(gitClient.WriteCallCount()).To(Equal(5))
+
+				path, content := gitClient.WriteArgsForCall(0)
+				Expect(path).To(Equal(".weave-gitops/apps/bar/app.yaml"))
+				Expect(string(content)).To(ContainSubstring("kind: Application"))
+
+				path, content = gitClient.WriteArgsForCall(1)
+				Expect(path).To(Equal(".weave-gitops/apps/bar/bar-gitops-deploy.yaml"))
+				Expect(content).To(Equal([]byte("kustomization")))
+
+				path, content = gitClient.WriteArgsForCall(2)
+				Expect(path).To(Equal(".weave-gitops/apps/bar/bar-gitops-source.yaml"))
+
+				augmented, err := automation.AddWegoIgnore(dummyGitSource)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(content).To(Equal(augmented))
+			})
+
+			It("commit and pushes the files", func() {
+				err := appSrv.Add(addParams)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(gitClient.CommitCallCount()).To(Equal(1))
+
+				msg, filters := gitClient.CommitArgsForCall(0)
+				Expect(msg).To(Equal(git.Commit{
+					Author:  git.Author{Name: "Weave Gitops", Email: "weave-gitops@weave.works"},
+					Message: gitopswriter.AddCommitMessage,
+				}))
+
+				Expect(len(filters)).To(Equal(1))
+			})
+
 		})
 
 		Context("when using URL", func() {
@@ -322,35 +273,6 @@ var _ = Describe("Add", func() {
 		BeforeEach(func() {
 			addParams.Url = "https://github.com/user/repo"
 			addParams.AppConfigUrl = "https://github.com/foo/bar"
-		})
-
-		Describe("generates source manifest", func() {
-			It("creates GitRepository when source type is git", func() {
-				addParams.SourceType = wego.SourceTypeGit
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateSourceGitCallCount()).To(Equal(1))
-
-				name, url, branch, secretRef, namespace := fluxClient.CreateSourceGitArgsForCall(0)
-				Expect(name).To(Equal("repo"))
-				Expect(url.String()).To(Equal("ssh://git@github.com/user/repo.git"))
-				Expect(branch).To(Equal("main"))
-				Expect(secretRef).To(Equal("wego-test-cluster-repo"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-			})
-
-			It("creates HelmRepository when source type is helm", func() {
-				addParams.Url = "https://charts.kube-ops.io"
-				addParams.Chart = "loki"
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(fluxClient.CreateSourceHelmCallCount()).To(Equal(1))
-
-				name, url, namespace := fluxClient.CreateSourceHelmArgsForCall(0)
-				Expect(name).To(Equal("loki"))
-				Expect(url).To(Equal("https://charts.kube-ops.io"))
-				Expect(namespace).To(Equal(wego.DefaultNamespace))
-			})
 		})
 
 		It("clones the repo to a temp dir", func() {
@@ -481,6 +403,27 @@ var _ = Describe("Add", func() {
 			Expect(gitClient.CloneCallCount()).To(Equal(0))
 			Expect(gitClient.WriteCallCount()).To(Equal(0))
 			Expect(kubeClient.ApplyCallCount()).To(Equal(0))
+		})
+	})
+
+	Context("ensure that app names are <= 63 characters in length", func() {
+		It("ensures that app names are <= 63 characters", func() {
+			app.Name = "a23456789012345678901234567890123456789012345678901234567890123"
+			Expect(appSrv.Add(addParams)).To(Succeed())
+
+			addParams.Name = "a234567890123456789012345678901234567890123456789012345678901234"
+			Expect(appSrv.Add(addParams)).ShouldNot(Succeed())
+		})
+
+		It("ensures that url base names are <= 63 characters when used as names", func() {
+			addParams.Url = "https://github.com/foo/a23456789012345678901234567890123456789012345678901234567890123"
+			localParams, err := appSrv.(*AppSvc).updateParametersIfNecessary(ctx, addParams)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(appSrv.Add(localParams)).To(Succeed())
+			addParams.Name = ""
+			addParams.Url = "https://github.com/foo/a234567890123456789012345678901234567890123456789012345678901234"
+			_, err = appSrv.(*AppSvc).updateParametersIfNecessary(ctx, addParams)
+			Expect(err).Should(HaveOccurred())
 		})
 	})
 
