@@ -133,7 +133,7 @@ func (a *AppSvc) updateParametersIfNecessary(ctx context.Context, params AddPara
 		}
 
 		if params.AppConfigUrl == string(models.ConfigTypeUserRepo) {
-			return params, errors.New("--app-config-url should be provided or set to NONE")
+			return params, errors.New("--app-config-url should be provided")
 		}
 	default:
 		var err error

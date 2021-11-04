@@ -16,9 +16,6 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
-	"github.com/weaveworks/weave-gitops/pkg/services/automation"
-	"github.com/weaveworks/weave-gitops/pkg/services/gitopswriter"
-	"github.com/weaveworks/weave-gitops/pkg/testutils"
 	"github.com/weaveworks/weave-gitops/pkg/utils"
 	"sigs.k8s.io/yaml"
 )
@@ -28,20 +25,6 @@ var (
 	ctx             context.Context
 	manifestsByPath map[string][]byte = map[string][]byte{}
 )
-
-var dummyGitSource = []byte(`---
-apiVersion: source.toolkit.fluxcd.io/v1beta1
-kind: GitRepository
-metadata:
-  name: wego-fork-test
-  namespace: wego-system
-spec:
-  interval: 30s
-  ref:
-    branch: main
-  secretRef:
-    name: wego-test-cluster-wego-fork-test
-  url: ssh://git@github.com/user/wego-fork-test.git`)
 
 var _ = Describe("Add", func() {
 	var _ = BeforeEach(func() {
@@ -90,7 +73,7 @@ var _ = Describe("Add", func() {
 		addParams.AppConfigUrl = ""
 
 		err := appSrv.Add(addParams)
-		Expect(err.Error()).Should(HaveSuffix("--app-config-url should be provided or set to NONE"))
+		Expect(err.Error()).Should(HaveSuffix("--app-config-url should be provided"))
 	})
 
 	Context("Looking up repo default branch", func() {
@@ -174,223 +157,7 @@ var _ = Describe("Add", func() {
 
 				Expect(appSrv.Add(addParams)).ShouldNot(Succeed())
 			})
-
-			It("clones the repo to a temp dir", func() {
-				err := appSrv.Add(addParams)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(gitClient.CloneCallCount()).To(Equal(1))
-				_, repoDir, url, branch := gitClient.CloneArgsForCall(0)
-
-				Expect(repoDir).To(ContainSubstring("user-repo-"))
-				Expect(url).To(Equal("ssh://git@github.com/foo/bar.git"))
-				Expect(branch).To(Equal("main"))
-			})
-
-			It("writes the files to the disk", func() {
-				fluxClient.CreateSourceGitReturns(dummyGitSource, nil)
-				fluxClient.CreateKustomizationReturns([]byte("kustomization"), nil)
-
-				err := appSrv.Add(addParams)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(gitClient.WriteCallCount()).To(Equal(5))
-
-				path, content := gitClient.WriteArgsForCall(0)
-				Expect(path).To(Equal(".weave-gitops/apps/bar/app.yaml"))
-				Expect(string(content)).To(ContainSubstring("kind: Application"))
-
-				path, content = gitClient.WriteArgsForCall(1)
-				Expect(path).To(Equal(".weave-gitops/apps/bar/bar-gitops-deploy.yaml"))
-				Expect(content).To(Equal([]byte("kustomization")))
-
-				path, content = gitClient.WriteArgsForCall(2)
-				Expect(path).To(Equal(".weave-gitops/apps/bar/bar-gitops-source.yaml"))
-
-				augmented, err := automation.AddWegoIgnore(dummyGitSource)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(content).To(Equal(augmented))
-			})
-
-			It("commit and pushes the files", func() {
-				err := appSrv.Add(addParams)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(gitClient.CommitCallCount()).To(Equal(1))
-
-				msg, filters := gitClient.CommitArgsForCall(0)
-				Expect(msg).To(Equal(git.Commit{
-					Author:  git.Author{Name: "Weave Gitops", Email: "weave-gitops@weave.works"},
-					Message: gitopswriter.AddCommitMessage,
-				}))
-
-				Expect(len(filters)).To(Equal(1))
-			})
-
 		})
-
-		Context("when using URL", func() {
-			BeforeEach(func() {
-				addParams.Url = "ssh://git@github.com/foo/bar.git"
-			})
-
-			It("clones the repo to a temp dir", func() {
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(gitClient.CloneCallCount()).To(Equal(1))
-				_, repoDir, url, branch := gitClient.CloneArgsForCall(0)
-
-				Expect(repoDir).To(ContainSubstring("user-repo-"))
-				Expect(url).To(Equal("ssh://git@github.com/foo/bar.git"))
-				Expect(branch).To(Equal("main"))
-			})
-
-			It("writes the files to the disk", func() {
-				addParams.AppConfigUrl = addParams.Url // so we know the root is ".wego"
-				fluxClient.CreateSourceGitReturns(dummyGitSource, nil)
-				fluxClient.CreateKustomizationReturns([]byte("kustomization"), nil)
-
-				Expect(appSrv.Add(addParams)).Should(Succeed())
-				Expect(gitClient.WriteCallCount()).To(Equal(5))
-			})
-		})
-
-		It("commit and pushes the files", func() {
-			Expect(appSrv.Add(addParams)).Should(Succeed())
-			Expect(gitClient.CommitCallCount()).To(Equal(1))
-
-			msg, filters := gitClient.CommitArgsForCall(0)
-			Expect(msg).To(Equal(git.Commit{
-				Author:  git.Author{Name: "Weave Gitops", Email: "weave-gitops@weave.works"},
-				Message: gitopswriter.AddCommitMessage,
-			}))
-
-			Expect(filters[0](".weave-gitops/apps/bar/app.yaml")).To(BeTrue())
-		})
-	})
-
-	Context("add app with external config repo", func() {
-		BeforeEach(func() {
-			addParams.Url = "https://github.com/user/repo"
-			addParams.AppConfigUrl = "https://github.com/foo/bar"
-		})
-
-		It("clones the repo to a temp dir", func() {
-			Expect(appSrv.Add(addParams)).Should(Succeed())
-			Expect(gitClient.CloneCallCount()).To(Equal(1))
-			_, repoDir, url, branch := gitClient.CloneArgsForCall(0)
-
-			Expect(repoDir).To(ContainSubstring("user-repo-"))
-			Expect(url).To(Equal("ssh://git@github.com/foo/bar.git"))
-			Expect(branch).To(Equal("main"))
-		})
-
-		It("writes the files to the disk", func() {
-			fluxClient.CreateSourceGitReturns(dummyGitSource, nil)
-			fluxClient.CreateKustomizationReturns([]byte("kustomization"), nil)
-
-			Expect(appSrv.Add(addParams)).Should(Succeed())
-			Expect(gitClient.WriteCallCount()).To(Equal(5))
-
-			found := 0
-			for idx := 0; idx < 3; idx++ {
-				path, _ := gitClient.WriteArgsForCall(idx)
-				if path == ".weave-gitops/apps/repo/app.yaml" || path == ".weave-gitops/apps/repo/repo-gitops-source.yaml" || path == ".weave-gitops/apps/repo/repo-gitops-deploy.yaml" {
-					found++
-				}
-			}
-
-			Expect(found).To(Equal(3))
-		})
-
-		It("commit and pushes the files", func() {
-			Expect(appSrv.Add(addParams)).Should(Succeed())
-			Expect(gitClient.CommitCallCount()).To(Equal(1))
-
-			msg, filters := gitClient.CommitArgsForCall(0)
-			Expect(msg).To(Equal(git.Commit{
-				Author:  git.Author{Name: "Weave Gitops", Email: "weave-gitops@weave.works"},
-				Message: gitopswriter.AddCommitMessage,
-			}))
-
-			Expect(len(filters)).To(Equal(1))
-		})
-	})
-
-	Context("when creating a pull request", func() {
-		//		var app models.Application
-		//		var emptyManifests []automation.AutomationManifest
-
-		//		clusterName := "cluster"
-
-		BeforeEach(func() {
-			gitProviders.GetDefaultBranchStub = func(_ context.Context, repoUrl gitproviders.RepoURL) (string, error) {
-				addUrl, err := gitproviders.NewRepoURL(addParams.Url)
-				Expect(err).NotTo(HaveOccurred())
-
-				if repoUrl.String() == addUrl.String() {
-					return "default-app-branch", nil
-				}
-				return "default-config-branch", nil
-			}
-
-			gitProviders.CreatePullRequestReturns(testutils.DummyPullRequest{}, nil)
-
-			addParams.Url = "ssh://github.com/user/repo.git"
-		})
-
-		JustBeforeEach(func() {
-			var err error
-			app, err = makeApplication(addParams)
-			Expect(err).ToNot(HaveOccurred())
-
-			// emptyManifests = []automation.AutomationManifest{
-			//  automation.AutomationManifest{
-			//      Path:    automation.AppYamlPath(app),
-			//      Content: []byte{}},
-			//  automation.AutomationManifest{
-			//      Path:    automation.AppAutomationSourcePath(app, clusterName),
-			//      Content: []byte{}},
-			//  automation.AutomationManifest{
-			//      Path:    automation.AppAutomationDeployPath(app, clusterName),
-			//      Content: []byte{}}}
-		})
-
-		// Context("uses the default app branch for config in app repository", func() {
-		//  BeforeEach(func() {
-		//      addParams.AppConfigUrl = ""
-		//  })
-
-		//  It("creates the pull request against the default branch for an org app repository", func() {
-		//      Expect(appSrv.(*AppSvc).createPullRequestToRepo(ctx, app, app.GitSourceURL, emptyManifests)).To(Succeed())
-		//      _, _, prInfo := gitProviders.CreatePullRequestArgsForCall(0)
-		//      Expect(prInfo.TargetBranch).To(Equal("default-app-branch"))
-		//  })
-
-		//  It("creates the pull request against the default branch for a user app repository", func() {
-		//      Expect(appSrv.(*AppSvc).createPullRequestToRepo(ctx, app, app.GitSourceURL, emptyManifests)).To(Succeed())
-		//      _, _, prInfo := gitProviders.CreatePullRequestArgsForCall(0)
-		//      Expect(prInfo.TargetBranch).To(Equal("default-app-branch"))
-		//  })
-		// })
-
-		// Context("uses the default config branch for external config", func() {
-		//  BeforeEach(func() {
-		//      addParams.AppConfigUrl = "https://github.com/foo/bar"
-		//  })
-
-		//  It("creates the pull request against the default branch for an org config repository", func() {
-		//      Expect(appSrv.(*AppSvc).createPullRequestToRepo(ctx, app, app.ConfigURL, emptyManifests)).To(Succeed())
-		//      _, _, prInfo := gitProviders.CreatePullRequestArgsForCall(0)
-		//      Expect(prInfo.TargetBranch).To(Equal("default-config-branch"))
-		//  })
-
-		//  It("creates the pull request against the default branch for a user config repository", func() {
-		//      Expect(appSrv.(*AppSvc).createPullRequestToRepo(ctx, app, app.ConfigURL, emptyManifests)).To(Succeed())
-		//      _, _, prInfo := gitProviders.CreatePullRequestArgsForCall(0)
-		//      Expect(prInfo.TargetBranch).To(Equal("default-config-branch"))
-		//  })
-		// })
 	})
 
 	Context("when using dry-run", func() {
@@ -408,7 +175,7 @@ var _ = Describe("Add", func() {
 
 	Context("ensure that app names are <= 63 characters in length", func() {
 		It("ensures that app names are <= 63 characters", func() {
-			app.Name = "a23456789012345678901234567890123456789012345678901234567890123"
+			addParams.Name = "a23456789012345678901234567890123456789012345678901234567890123"
 			Expect(appSrv.Add(addParams)).To(Succeed())
 
 			addParams.Name = "a234567890123456789012345678901234567890123456789012345678901234"
