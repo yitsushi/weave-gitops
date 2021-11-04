@@ -39,8 +39,6 @@ type AddParams struct {
 	MigrateToNewDirStructure   func(string) string
 }
 
-var defaultMigrateToNewDirStructure func(string) string = func(s string) string { return s }
-
 const (
 	DefaultPath           = "./"
 	DefaultBranch         = "main"
