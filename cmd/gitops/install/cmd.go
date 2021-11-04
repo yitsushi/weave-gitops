@@ -12,11 +12,14 @@ import (
 	wego "github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/pkg/apputils"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
+	"github.com/weaveworks/weave-gitops/pkg/services/auth"
 	"github.com/weaveworks/weave-gitops/pkg/services/gitops"
 )
 
 type params struct {
-	DryRun bool
+	DryRun       bool
+	AppConfigURL string
 }
 
 var (
@@ -41,8 +44,8 @@ repo.`,
 
 func init() {
 	Cmd.Flags().BoolVar(&installParams.DryRun, "dry-run", false, "Outputs all the manifests that would be installed")
-	installCmd.Flags().StringVar(&installParams.AppConfigURL, "app-config-url", "", "URL of external repository that will hold automation manifests")
-	cobra.CheckErr(installCmd.MarkFlagRequired("app-config-url"))
+	Cmd.Flags().StringVar(&installParams.AppConfigURL, "app-config-url", "", "URL of external repository that will hold automation manifests")
+	cobra.CheckErr(Cmd.MarkFlagRequired("app-config-url"))
 }
 
 func installRunCmd(cmd *cobra.Command, args []string) error {

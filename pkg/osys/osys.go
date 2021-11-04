@@ -15,6 +15,7 @@ type Osys interface {
 	LookupEnv(envVar string) (string, bool)
 	Setenv(envVar, value string) error
 	Unsetenv(envVar string) error
+	ReadDir(dirName string) ([]os.DirEntry, error)
 	Exit(code int)
 	Stdin() *os.File
 	Stdout() *os.File
@@ -22,6 +23,8 @@ type Osys interface {
 }
 
 type OsysClient struct{}
+
+var _ Osys = &OsysClient{}
 
 func New() *OsysClient {
 	return &OsysClient{}
@@ -47,6 +50,10 @@ func (o *OsysClient) Setenv(envVar, value string) error {
 
 func (o *OsysClient) Unsetenv(envVar string) error {
 	return os.Unsetenv(envVar)
+}
+
+func (o *OsysClient) ReadDir(dirName string) ([]os.DirEntry, error) {
+	return os.ReadDir(dirName)
 }
 
 // The following three functions are used by both "add app" and "delete app".
