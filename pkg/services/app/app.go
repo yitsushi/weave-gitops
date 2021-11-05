@@ -15,7 +15,6 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/logger"
 	"github.com/weaveworks/weave-gitops/pkg/osys"
-	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -50,10 +49,9 @@ type AppSvc struct {
 	Logger      logger.Logger
 	GitProvider gitproviders.GitProvider
 	Clock       clock.Clock
-	Automation  automation.AutomationService
 }
 
-func New(ctx context.Context, logger logger.Logger, appGit, configGit git.Git, gitProvider gitproviders.GitProvider, flux flux.Flux, kube kube.Kube, osys osys.Osys, auto automation.AutomationService) AppService {
+func New(ctx context.Context, logger logger.Logger, appGit, configGit git.Git, gitProvider gitproviders.GitProvider, flux flux.Flux, kube kube.Kube, osys osys.Osys) AppService {
 	return &AppSvc{
 		Context:     ctx,
 		AppGit:      appGit,
@@ -64,7 +62,6 @@ func New(ctx context.Context, logger logger.Logger, appGit, configGit git.Git, g
 		Osys:        osys,
 		GitProvider: gitProvider,
 		Clock:       clock.New(),
-		Automation:  auto,
 	}
 }
 

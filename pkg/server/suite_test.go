@@ -20,7 +20,6 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/services/applicationv2"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth/authfakes"
-	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	"github.com/weaveworks/weave-gitops/pkg/testutils"
 
 	. "github.com/onsi/ginkgo"
@@ -117,7 +116,6 @@ var _ = BeforeEach(func() {
 		Logger:      logger,
 		Osys:        osysClient,
 		GitProvider: gp,
-		Automation:  automation.NewAutomationService(gp, fluxClient, logger),
 	}, nil)
 
 	appFactory.GetKubeServiceStub = func() (kube.Kube, error) {

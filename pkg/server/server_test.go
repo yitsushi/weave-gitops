@@ -48,7 +48,6 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/osys/osysfakes"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
 	"github.com/weaveworks/weave-gitops/pkg/services/app"
-	"github.com/weaveworks/weave-gitops/pkg/services/automation"
 	fakelogr "github.com/weaveworks/weave-gitops/pkg/vendorfakes/logr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -652,7 +651,6 @@ var _ = Describe("ApplicationsServer", func() {
 				Logger:      log,
 				Osys:        fakeOsys,
 				GitProvider: gp,
-				Automation:  automation.NewAutomationService(gp, fluxClient, log),
 			}, nil)
 
 			appFactory.GetKubeServiceReturns(fakeKube, nil)
