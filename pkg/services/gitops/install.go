@@ -136,7 +136,6 @@ func (g *Gitops) storeManifests(params InstallParams, systemManifests map[string
 		}
 	}
 
-	//	remover, _, err := app.CloneRepo(g.gitClient, params.AppConfigURL, configBranch, params.DryRun)
 	remover, _, err := gitrepo.CloneRepo(ctx, g.gitClient, normalizedURL, configBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to clone configuration repo: %w", err)
@@ -196,7 +195,6 @@ func (g *Gitops) storeManifests(params InstallParams, systemManifests map[string
 		return nil, fmt.Errorf("failed to write user manifests: %w", err)
 	}
 
-	//	return manifests, app.CommitAndPush(g.gitClient, "Add GitOps runtime manifests", params.DryRun, g.logger)
 	return manifests, gitrepo.CommitAndPush(ctx, g.gitClient, "Add GitOps runtime manifests", g.logger)
 }
 
