@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  creationTimestamp: null
+  name: weave-gitops-enterprise-mccp-chart
+  namespace: wego-system
+spec:
+  interval: 0s
+  url: https://s3.us-east-1.amazonaws.com/weaveworks-wkp/releases/charts-v3/
+status: {}

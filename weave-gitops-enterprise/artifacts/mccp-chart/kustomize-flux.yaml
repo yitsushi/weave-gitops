@@ -1,0 +1,21 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  creationTimestamp: null
+  name: weave-gitops-enterprise-mccp-chart
+  namespace: wego-system
+spec:
+  healthChecks:
+  - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+    kind: HelmRelease
+    name: weave-gitops-enterprise-mccp-chart
+    namespace: wego-system
+  interval: 5m0s
+  path: weave-gitops-enterprise/artifacts/mccp-chart/helm-chart
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: hxg4
+    namespace: wego-system
+  targetNamespace: wego-system
+status: {}

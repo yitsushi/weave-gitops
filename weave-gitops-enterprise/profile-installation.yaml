@@ -1,0 +1,15 @@
+apiVersion: weave.works/v1alpha1
+kind: ProfileInstallation
+metadata:
+  creationTimestamp: null
+  name: weave-gitops-enterprise
+  namespace: wego-system
+spec:
+  gitRepository:
+    name: hxg4
+    namespace: wego-system
+  source:
+    branch: main
+    path: weave-gitops-enterprise
+    url: file:///var/folders/_j/hq5x2wjd2td9chgxmbqsrsx80000gn/T/git-151295805
+status: {}

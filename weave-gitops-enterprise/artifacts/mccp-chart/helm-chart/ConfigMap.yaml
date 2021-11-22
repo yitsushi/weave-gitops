@@ -1,0 +1,29 @@
+apiVersion: v1
+data:
+  default-values.yaml: |
+    dbConfig:
+      databaseType: sqlite
+    sqliteConfig:
+      persistentVolumeClaim: true
+    agentTemplate:
+      natsURL: 192.168.0.1:31490
+    nats:
+      client:
+        service:
+          nodePort: 31490
+    config:
+      cluster:
+        name: default
+      capi:
+        repositoryURL: https://github.com/weaveworks/my-cluster-repo
+        baseBranch: main
+    nginx-ingress-controller:
+      service:
+        nodePorts:
+          http:
+            30080
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: weave-gitops-enterprise-mccp-chart-defaultvalues
+  namespace: wego-system

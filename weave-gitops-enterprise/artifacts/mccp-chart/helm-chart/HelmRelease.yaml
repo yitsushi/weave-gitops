@@ -1,0 +1,22 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  creationTimestamp: null
+  name: weave-gitops-enterprise-mccp-chart
+  namespace: wego-system
+spec:
+  chart:
+    spec:
+      chart: mccp
+      sourceRef:
+        kind: HelmRepository
+        name: weave-gitops-enterprise-mccp-chart
+        namespace: wego-system
+      version: 0.0.15
+  interval: 0s
+  releaseName: mccp-chart
+  valuesFrom:
+  - kind: ConfigMap
+    name: weave-gitops-enterprise-mccp-chart-defaultvalues
+    valuesKey: default-values.yaml
+status: {}
