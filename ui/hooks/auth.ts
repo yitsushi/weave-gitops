@@ -16,6 +16,49 @@ function poller(cb, interval) {
   return setInterval(cb, interval);
 }
 
+function superPoll(cb, interval) {
+  let i = interval;
+  let timeout = null;
+
+  const poll = () => {
+    cb();
+    timeout = setTimeout(() => {
+      poll();
+    }, i);
+  };
+
+  poll();
+
+  return {
+    update: (newInterval) => {
+      i = newInterval;
+    },
+    cancel: () => {
+      clearTimeout(timeout);
+    },
+    debug: () => console.log(i),
+  };
+}
+
+export function myfunc(p: Promise<any>) {
+  let i = 1000;
+  const { update, cancel, debug } = superPoll(
+    () =>
+      p
+        .then(() => {
+          console.log("continuing polling");
+          // cancel();
+          debug();
+          i = i + 1000;
+          update(i);
+        })
+        .catch((e) => {
+          // update(e.newInterval);
+        }),
+    1000
+  );
+}
+
 export function useIsAuthenticated(provider: GitProvider): boolean {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { getProviderToken } = useContext(AppContext);
@@ -63,7 +106,7 @@ export default function useAuth() {
                 reject({ message });
               }
             });
-        }, (codeRes.interval + 1) * 1000);
+        }, (codeRes.interval + 1) * 100);
       }),
     };
   };

@@ -6,6 +6,7 @@ import Flex from "../components/Flex";
 import Link from "../components/Link";
 import Page, { TitleBar } from "../components/Page";
 import useApplications from "../hooks/applications";
+import { myfunc } from "../hooks/auth";
 import { Application } from "../lib/api/applications/applications.pb";
 import { PageRoute } from "../lib/types";
 import { formatURL } from "../lib/utils";
@@ -20,6 +21,10 @@ function Applications({ className }: Props) {
 
   React.useEffect(() => {
     listApplications().then((res) => setApplications(res as Application[]));
+  }, []);
+
+  React.useEffect(() => {
+    myfunc(listApplications().then((res) => console.log(res)));
   }, []);
 
   return (
