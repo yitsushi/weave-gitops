@@ -24,9 +24,9 @@ import (
 )
 
 type InstallParams struct {
-	Namespace    string
-	DryRun       bool
-	AppConfigURL string
+	Namespace  string
+	DryRun     bool
+	ConfigRepo string
 }
 
 func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
@@ -43,7 +43,7 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 
 	var err error
 
-	if params.AppConfigURL != "" || params.DryRun {
+	if params.ConfigRepo != "" || params.DryRun {
 		// We need to get the manifests to persist in the repo and
 		// non-dry run install doesn't return them
 		fluxManifests, err = g.flux.Install(params.Namespace, true)
@@ -75,7 +75,11 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 			version = "latest"
 		}
 
-		wegoAppManifests, err := manifests.GenerateWegoAppManifests(manifests.WegoAppParams{Version: version, Namespace: params.Namespace})
+		wegoAppManifests, err := manifests.GenerateManifests(manifests.Params{
+			AppVersion:      version,
+			ProfilesVersion: version,
+			Namespace:       params.Namespace,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating wego-app manifests, %w", err)
 		}
@@ -106,7 +110,7 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 func (g *Gitops) StoreManifests(gitClient git.Git, gitProvider gitproviders.GitProvider, params InstallParams, systemManifests map[string][]byte) (map[string][]byte, error) {
 	ctx := context.Background()
 
-	if !params.DryRun && params.AppConfigURL != "" {
+	if !params.DryRun && params.ConfigRepo != "" {
 		cname, err := g.kube.GetClusterName(ctx)
 		if err != nil {
 			g.logger.Warningf("Cluster name not found, using default : %v", err)
@@ -156,14 +160,14 @@ func (g *Gitops) validateWegoInstall(ctx context.Context, params InstallParams) 
 func (g *Gitops) storeManifests(gitClient git.Git, gitProvider gitproviders.GitProvider, params InstallParams, systemManifests map[string][]byte, cname string) (map[string][]byte, error) {
 	ctx := context.Background()
 
-	normalizedURL, err := gitproviders.NewRepoURL(params.AppConfigURL)
+	normalizedURL, err := gitproviders.NewRepoURL(params.ConfigRepo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert app config repo %q : %w", params.AppConfigURL, err)
+		return nil, fmt.Errorf("failed to convert app config repo %q : %w", params.ConfigRepo, err)
 	}
 
 	configBranch, err := gitProvider.GetDefaultBranch(ctx, normalizedURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not determine default branch for config repository: %q %w", params.AppConfigURL, err)
+		return nil, fmt.Errorf("could not determine default branch for config repository: %q %w", params.ConfigRepo, err)
 	}
 
 	remover, _, err := gitrepo.CloneRepo(ctx, gitClient, normalizedURL, configBranch)
@@ -204,7 +208,7 @@ func (g *Gitops) storeManifests(gitClient git.Git, gitProvider gitproviders.GitP
 
 	//TODO add handling for PRs
 	// if !params.AutoMerge {
-	//  if err := a.createPullRequestToRepo(info, info.Spec.ConfigURL, appHash, appSpec, appGoat, appSource); err != nil {
+	//  if err := a.createPullRequestToRepo(info, info.Spec.ConfigRepo, appHash, appSpec, appGoat, appSource); err != nil {
 	//      return err
 	//  }
 	// } else {
@@ -292,11 +296,20 @@ func (g *Gitops) fetchNamespaceWithLabel(ctx context.Context, key string, value 
 		return "", fmt.Errorf("error setting resource: %w", err)
 	}
 
-	if len(nsl.Items) == 0 {
+	namespaces := []string{}
+	for _, n := range nsl.Items {
+		namespaces = append(namespaces, n.Name)
+	}
+
+	if len(namespaces) == 0 {
 		return "", ErrNamespaceNotFound
 	}
 
-	return nsl.Items[0].Name, nil
+	if len(namespaces) > 1 {
+		return "", fmt.Errorf("found multiple namespaces %s with %s=%s, we are unable to define the correct one", namespaces, key, value)
+	}
+
+	return namespaces[0], nil
 }
 
 func (g *Gitops) saveWegoConfig(ctx context.Context, params InstallParams) (*corev1.ConfigMap, error) {

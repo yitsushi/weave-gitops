@@ -143,7 +143,7 @@ func generateTestInputs() TestInputs {
 	var inputs TestInputs
 
 	uniqueSuffix := RandString(6)
-	inputs.appRepoName = "wego-test-app-" + RandString(8)
+	inputs.appRepoName = "test-app-" + RandString(8)
 	inputs.appManifestFilePath = getUniqueWorkload("xxyyzz", uniqueSuffix)
 	inputs.workloadName = "nginx-" + uniqueSuffix
 	inputs.workloadNamespace = "my-nginx-" + uniqueSuffix
@@ -382,13 +382,14 @@ func waitForNamespaceToTerminate(namespace string, timeout time.Duration) error 
 }
 
 func VerifyControllersInCluster(namespace string) {
-	Expect(waitForResource("deploy", "helm-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("deploy", "kustomize-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("deploy", "notification-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("deploy", "source-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("deploy", "image-automation-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("deploy", "image-reflector-controller", namespace, INSTALL_PODS_READY_TIMEOUT))
-	Expect(waitForResource("pods", "", namespace, INSTALL_PODS_READY_TIMEOUT))
+	Expect(waitForResource("deploy", "helm-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "kustomize-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "notification-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "source-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "image-automation-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "image-reflector-controller", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("deploy", "wego-app", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
+	Expect(waitForResource("pods", "", namespace, INSTALL_PODS_READY_TIMEOUT)).To(Succeed())
 
 	By("And I wait for the gitops controllers to be ready", func() {
 		command := exec.Command("sh", "-c", fmt.Sprintf("kubectl wait --for=condition=Ready --timeout=%s -n %s --all pod --selector='app!=wego-app'", "120s", namespace))
@@ -400,7 +401,7 @@ func VerifyControllersInCluster(namespace string) {
 
 func installAndVerifyWego(wegoNamespace, repoURL string) {
 	By("And I run 'gitops install' command with namespace "+wegoNamespace, func() {
-		command := exec.Command("sh", "-c", fmt.Sprintf("%s install --namespace=%s --app-config-url=%s", WEGO_BIN_PATH, wegoNamespace, repoURL))
+		command := exec.Command("sh", "-c", fmt.Sprintf("%s install --namespace=%s --config-repo=%s", WEGO_BIN_PATH, wegoNamespace, repoURL))
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(session, INSTALL_SUCCESSFUL_TIMEOUT).Should(gexec.Exit())
@@ -431,7 +432,7 @@ func deleteNamespace(namespace string) {
 
 	command := exec.Command("kubectl", "delete", "ns", namespace)
 	session, _ := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-	Eventually(session, TIMEOUT_TWO_MINUTES).Should(gexec.Exit())
+	Eventually(session, NAMESPACE_TERMINATE_TIMEOUT).Should(gexec.Exit())
 }
 
 func deleteRepo(appRepoName string, providerName gitproviders.GitProviderName, org string) {
