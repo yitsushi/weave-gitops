@@ -112,6 +112,19 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create app service: %w", err)
 	}
 
+	kubeClient, err := factory.GetKubeService()
+	if err != nil {
+		return fmt.Errorf("failed getting kubernetes client: %w", err)
+	}
+
+	wegoConfig, err := kubeClient.GetWegoConfig(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed getting wego config: %w", err)
+	}
+
+	params.Namespace = wegoConfig.WegoNamespace
+	params.ConfigRepo = wegoConfig.ConfigRepo
+
 	gitClient, gitProvider, err := factory.GetGitClients(ctx, providerClient, services.GitConfigParams{
 		URL:              params.Url,
 		ConfigRepo:       params.ConfigRepo,

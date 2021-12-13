@@ -213,9 +213,15 @@ func (k *KubeHTTP) Apply(ctx context.Context, manifest []byte, namespace string)
 		return fmt.Errorf("failed to dynamic resource interface: %w", err)
 	}
 
+	// Forcing is needed because once the kustomize controller starts to apply the wego deployment it takes control
+	// over some fields causing conflicts to happen when we apply the manifests during gitops install.
+	// Error example: Apply failed with 1 conflict: conflict with "kustomize-controller": .spec.template.spec.containers[name="wego-app"].image
+	force := true
 	_, err = dr.Patch(ctx, name, types.ApplyPatchType, data, metav1.PatchOptions{
 		FieldManager: "wego",
+		Force:        &force,
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed applying %s: %w", string(data), err)
 	}

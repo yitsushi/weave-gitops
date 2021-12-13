@@ -323,6 +323,7 @@ func (g *Gitops) saveWegoConfig(ctx context.Context, params InstallParams) (*cor
 	cm, err := g.kube.SetWegoConfig(ctx, kube.WegoConfig{
 		FluxNamespace: fluxNamespace,
 		WegoNamespace: params.Namespace,
+		ConfigRepo:    params.ConfigRepo,
 	}, params.Namespace)
 	if err != nil {
 		return nil, err
