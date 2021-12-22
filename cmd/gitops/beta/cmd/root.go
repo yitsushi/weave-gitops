@@ -9,8 +9,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
 	"github.com/spf13/viper"
+	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/add"
+	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/create"
+	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/get"
 )
 
 var cfgFile string
@@ -32,6 +34,9 @@ func init() {
 	Cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.beta.yaml)")
 
 	Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	Cmd.AddCommand(add.GetCommand())
+	Cmd.AddCommand(create.GetCommand())
+	Cmd.AddCommand(get.GetCommand())
 }
 
 // initConfig reads in config file and ENV variables if set.

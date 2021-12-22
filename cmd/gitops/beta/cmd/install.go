@@ -5,27 +5,23 @@ This file is part of the Weave GitOps CLI.
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 
-	"github.com/weaveworks/weave-gitops/cmd/internal"
-	"github.com/weaveworks/weave-gitops/pkg/flux"
-	"github.com/weaveworks/weave-gitops/pkg/kube"
-	"github.com/weaveworks/weave-gitops/pkg/osys"
-	"github.com/weaveworks/weave-gitops/pkg/runner"
-	"github.com/weaveworks/weave-gitops/pkg/services"
-
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
-	"github.com/weaveworks/weave-gitops/pkg/services/auth"
-	"github.com/weaveworks/weave-gitops/pkg/services/gitops"
+	"github.com/weaveworks/weave-gitops/cmd/internal"
+	"github.com/weaveworks/weave-gitops/core/gitops/install"
+	"github.com/weaveworks/weave-gitops/core/repository"
 )
 
 type params struct {
-	DryRun     bool
-	ConfigRepo string
+	FluxPaths []string
 }
+
+const (
+	fluxPaths = "flux-paths"
+)
 
 var (
 	installParams params
@@ -35,9 +31,8 @@ var (
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install or upgrade GitOps",
-	Long: `The beta install command deploys GitOps in the specified namespace,
-adds a cluster entry to the GitOps repo, and persists the GitOps runtime into the
-repo.`,
+	Long: `The beta install command creates the manifests in the current directory.  The directory must
+be an initialized git repository and have Flux installed.`,
 	Example: `  # Install GitOps in the wego-system namespace
   gitops beta install --config-repo ssh://git@github.com/me/mygitopsrepo.git`,
 	RunE:          installRunCmd,
@@ -50,56 +45,31 @@ repo.`,
 
 func init() {
 	Cmd.AddCommand(installCmd)
-	installCmd.Flags().BoolVar(&installParams.DryRun, "dry-run", false, "Outputs all the manifests that would be installed")
-	installCmd.Flags().StringVar(&installParams.ConfigRepo, "config-repo", "", "URL of external repository that will hold automation manifests")
-	cobra.CheckErr(installCmd.MarkFlagRequired("config-repo"))
+	installCmd.Flags().StringSliceVar(&installParams.FluxPaths, fluxPaths, []string{}, "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
+	cobra.CheckErr(installCmd.MarkFlagRequired("flux-paths"))
 }
 
 func installRunCmd(cmd *cobra.Command, args []string) error {
-	namespace, _ := cmd.Parent().Flags().GetString("namespace")
-
-	log := internal.NewCLILogger(os.Stdout)
-	fluxClient := flux.New(osys.New(), &runner.CLIRunner{})
-
-	k, _, err := kube.NewKubeHTTPClient()
+	dir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("error creating k8s http client: %w", err)
+		return fmt.Errorf("unable to determine local directory: %w", err)
 	}
 
-	factory := services.NewFactory(fluxClient, log)
-	providerClient := internal.NewGitProviderClient(os.Stdout, os.LookupEnv, auth.NewAuthCLIHandler, log)
-
-	gitopsService := gitops.New(log, fluxClient, k)
-
-	gitOpsParams := gitops.InstallParams{
-		Namespace:  namespace,
-		DryRun:     installParams.DryRun,
-		ConfigRepo: installParams.ConfigRepo,
-	}
-
-	manifests, err := gitopsService.Install(gitOpsParams)
+	repo, err := internal.GitRepository(dir)
 	if err != nil {
 		return err
 	}
 
-	gitClient, gitProvider, err := factory.GetGitClients(context.Background(), providerClient, services.GitConfigParams{
-		URL:       installParams.ConfigRepo,
-		Namespace: namespace,
-		DryRun:    installParams.DryRun,
-	})
+	toolkitFiles, err := internal.ReadDir(installParams.FluxPaths)
 	if err != nil {
-		return fmt.Errorf("error creating git clients: %w", err)
+		return err
 	}
 
-	manifests, err = gitopsService.StoreManifests(gitClient, gitProvider, gitOpsParams, manifests)
-	if err != nil {
-		return fmt.Errorf("error storing manifests: %w", err)
-	}
+	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitWriter(false), "test")
 
-	if installParams.DryRun {
-		for _, manifest := range manifests {
-			fmt.Println(string(manifest))
-		}
+	err = gitopsInstaller.Install(repo, internal.StubAuth{}, toolkitFiles)
+	if err != nil {
+		return fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
 	}
 
 	return nil

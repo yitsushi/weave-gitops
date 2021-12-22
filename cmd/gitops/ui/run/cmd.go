@@ -221,6 +221,11 @@ func runCmd(cmd *cobra.Command, args []string) error {
 	go func() {
 		log.Infof("Serving on port %s", options.Port)
 
+		//if err := engine.Run(addr); err != nil {
+		//	log.Error(err, "failed to launch gin server, exited")
+		//	os.Exit(1)
+		//}
+
 		if err := srv.ListenAndServe(); err != nil {
 			log.Error(err, "server exited")
 			os.Exit(1)
