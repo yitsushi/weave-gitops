@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package gitops_server.v1;
+
+option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
+
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Weave GitOps App Kustomization API",
+    version: "0.1",
+    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications",
+  },
+  consumes: "apps/json",
+  produces: "apps/json",
+};
+
+message Interval {
+  int64 hours = 1;
+  int64 minutes = 2;
+  int64 seconds = 3;
+}
+
+message SourceRef {
+  enum Kind {
+    GitRepository = 0;
+    Bucket = 1;
+    HelmRepository = 2;
+  };
+  Kind kind = 1;
+  string name = 2;
+}
+
+message Kustomization {
+  string name = 1;
+  string namespace = 2;
+  string path = 3;
+  SourceRef sourceRef = 4;
+  Interval interval = 5;
+}
+
+message AddKustomizationRequest {
+  string repo_name = 1;
+  string app_name = 2;
+  string name = 3;
+  string namespace = 4;
+  string path = 5;
+  SourceRef sourceRef = 6;
+  Interval interval = 7;
+}
+
+message AddKustomizationResponse {
+  bool success = 1;
+  Kustomization kustomization = 2;
+}
+
+message RemoveKustomizationRequest {
+  string repo_name = 1;
+  string app_name = 2;
+  string kustomization_name = 3;
+}
+
+message RemoveKustomizationResponse {
+  bool success = 1;
+}
+
+
+service AppKustomization {
+  /*
+    * AddKustomization adds a Kustomization to a cluster via GitOps.
+    */
+  rpc Add(AddKustomizationRequest) returns (AddKustomizationResponse) {
+    option (google.api.http) = {
+      post : "/v1/repo/{repo_name}/app/{app_name}/kustomization"
+      body: "*"
+    };
+  }
+
+  /*
+  * RemoveKustomization removes a Kustomization from a cluster via GitOps.
+  */
+  rpc Remove(RemoveKustomizationRequest) returns (RemoveKustomizationResponse) {
+    option (google.api.http) = {
+      delete : "/v1/repo/{repo_name}/app/{app_name}/kustomization/{kustomization_name}"
+      body: "*"
+    };
+  }
+}

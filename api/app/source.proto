@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package gitops_server.v1;
+
+option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
+
+message Artifact {
+  string checksum = 1;
+  int32 lastupdateat = 2;
+  string path = 3;
+  string revision = 4;
+  string url = 5;
+}
+
+message Condition {
+  string type = 1;
+  string status = 2;
+  string reason = 3;
+  string message = 4;
+  string timestamp = 5;
+}
+
+message GitRepositoryRef {
+  string branch = 1;
+  string tag = 2;
+  string semver = 3;
+  string commit = 4;
+}
+
+message Source {
+  string name = 1;
+  string namespace = 2;
+  string url = 3;
+  GitRepositoryRef reference = 4;
+  enum Type {
+    Git = 0;
+    Bucket = 1;
+    Helm = 2;
+    Chart = 3;
+  };
+  Type type = 5;
+  string provider = 6;
+  string bucketname = 7;
+  string region = 8;
+  string gitimplementation = 9;
+  string timeout = 10;
+  string secretRefName = 11;
+  repeated Condition conditions = 12;
+  Artifact artifact = 13;
+}

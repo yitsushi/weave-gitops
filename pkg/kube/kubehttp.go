@@ -80,6 +80,44 @@ var InClusterConfig func() (*rest.Config, error) = func() (*rest.Config, error) 
 
 var ErrNamespaceNotFound = errors.New("namespace not found")
 
+func NewRestClient() (*rest.RESTClient, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("kube.NewClient cluster config: %w", err)
+	}
+
+	//scheme := CreateScheme()
+	//rawClient, err := client.New(config, client.Options{
+	//	Scheme: scheme,
+	//})
+
+	client, err := rest.RESTClientFor(config)
+
+	if err != nil {
+		return nil, fmt.Errorf("error creating rest client: %w", err)
+	} else {
+		return client, nil
+	}
+}
+
+func NewClient() (client.Client, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("kube.NewClient cluster config: %w", err)
+	}
+
+	scheme := CreateScheme()
+	rawClient, err := client.New(config, client.Options{
+		Scheme: scheme,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("kube.NewClient client: %w", err)
+	} else {
+		return rawClient, nil
+	}
+}
+
 func NewKubeHTTPClientWithConfig(config *rest.Config, contextName string) (Kube, client.Client, error) {
 	scheme := CreateScheme()
 
