@@ -69,7 +69,11 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/gin-gonic/gin v1.7.7
+require (
+	github.com/fluxcd/pkg/untar v0.1.0
+	github.com/gin-gonic/gin v1.7.7
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+)
 
 require (
 	cloud.google.com/go v0.93.3 // indirect
@@ -212,7 +216,6 @@ require (
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
