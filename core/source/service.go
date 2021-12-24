@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,13 +14,10 @@ import (
 	"strings"
 
 	repository "github.com/fluxcd/source-controller/api/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8s "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
-)
-
-const (
-	kFluxSystem = "wego-system"
 )
 
 var (
@@ -34,40 +32,47 @@ var (
 	}
 )
 
+var (
+	ErrNotFound = errors.New("not found")
+)
+
 type K8sObject struct {
 	Path string                 `json:"path"`
 	Data map[string]interface{} `json:"data"`
 }
 
-type GitRepository interface {
-	Get(ctx context.Context) (repository.GitRepository, error)
-	GetArtifact(ctx context.Context) ([]K8sObject, error)
+type Service interface {
+	Get(ctx context.Context, name, namespace string) (repository.GitRepository, error)
+	GetArtifact(ctx context.Context, name, namespace string) ([]K8sObject, error)
 }
 
-type gitRepository struct {
-	client        client.Client
+type defaultService struct {
+	client        k8s.Client
 	exclusionList []string
 }
 
-func NewGitRepository(client client.Client, exclusionList []string) GitRepository {
-	return &gitRepository{client: client, exclusionList: exclusionList}
+func NewService(client k8s.Client, exclusionList []string) Service {
+	return &defaultService{client: client, exclusionList: exclusionList}
 }
 
-func (gr *gitRepository) Get(ctx context.Context) (repository.GitRepository, error) {
+func (gr *defaultService) Get(ctx context.Context, name, namespace string) (repository.GitRepository, error) {
 	var repoObj repository.GitRepository
 	err := gr.client.Get(ctx, types.NamespacedName{
-		Namespace: kFluxSystem,
-		Name:      "wego-github-gitops-repo-000-delta",
+		Namespace: namespace,
+		Name:      name,
 	}, &repoObj)
-	if err != nil {
+
+	if apierrors.IsNotFound(err) {
+		return repository.GitRepository{}, ErrNotFound
+	} else if err != nil {
 		return repository.GitRepository{}, err
 	}
 
 	return repoObj, nil
 }
 
-func (gr *gitRepository) GetArtifact(ctx context.Context) ([]K8sObject, error) {
-	repo, err := gr.Get(ctx)
+func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace string) ([]K8sObject, error) {
+	repo, err := gr.Get(ctx, name, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +136,7 @@ func (gr *gitRepository) GetArtifact(ctx context.Context) ([]K8sObject, error) {
 
 		if include {
 			data := bytes.NewBuffer([]byte(nil))
-			fmt.Printf("Contents of %s: ", header.Name)
+			//fmt.Printf("Contents of %s: ", header.Name)
 			if _, err := io.Copy(data, tr); err != nil {
 				return nil, err
 			}

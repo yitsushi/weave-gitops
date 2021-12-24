@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/weaveworks/weave-gitops/core/gitops"
 	"github.com/weaveworks/weave-gitops/core/source"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"golang.org/x/sync/errgroup"
@@ -22,13 +23,13 @@ func main() {
 		c.String(http.StatusOK, "pong")
 	})
 
-	engine.GET("/repository", func(c *gin.Context) {
+	engine.GET("/repository/:name", func(c *gin.Context) {
 		_, client, err := kube.NewKubeHTTPClient()
 		if err != nil {
 			c.Error(err)
 		}
-		repo := source.NewGitRepository(client, source.GitopsRuntimeExclusionList)
-		k, err := repo.Get(context.Background())
+		repo := source.NewService(client, source.GitopsRuntimeExclusionList)
+		k, err := repo.Get(context.Background(), c.Param("name"), gitops.FluxNamespace)
 		if err != nil {
 			c.Error(err)
 		}
@@ -36,15 +37,15 @@ func main() {
 		c.JSON(http.StatusOK, k)
 	})
 
-	engine.GET("/repository/:commitId/artifact", func(c *gin.Context) {
+	engine.GET("/repository/:name/artifact", func(c *gin.Context) {
 		_, client, err := kube.NewKubeHTTPClient()
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 		}
-		repo := source.NewGitRepository(client, source.GitopsRuntimeExclusionList)
-		k, err := repo.GetArtifact(context.Background())
+		repo := source.NewService(client, source.GitopsRuntimeExclusionList)
+		k, err := repo.GetArtifact(context.Background(), c.Param("name"), gitops.FluxNamespace)
 		if err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 		}
 
 		c.JSON(http.StatusOK, k)
