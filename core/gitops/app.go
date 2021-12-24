@@ -1,10 +1,9 @@
-package app
+package gitops
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/weaveworks/weave-gitops/core/gitops"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/yaml"
 )
@@ -47,15 +46,15 @@ func (a App) Kustomization() types.Kustomization {
 	return k
 }
 
-func (a App) Files() ([]gitops.File, error) {
-	var files []gitops.File
+func (a App) Files() ([]File, error) {
+	var files []File
 
 	kustomizeData, err := yaml.Marshal(a.Kustomization())
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
 	}
 
-	files = append(files, gitops.File{Path: a.path(kustomizationFilename), Data: kustomizeData})
+	files = append(files, File{Path: a.path(kustomizationFilename), Data: kustomizeData})
 
 	metadata := map[string]interface{}{
 		"id":          a.Id,
@@ -67,7 +66,7 @@ func (a App) Files() ([]gitops.File, error) {
 		return nil, fmt.Errorf("app %s marshal metadata into json: %w", a.Name, err)
 	}
 
-	files = append(files, gitops.File{Path: a.path("metadata.json"), Data: metadataData})
+	files = append(files, File{Path: a.path("metadata.json"), Data: metadataData})
 
 	return files, nil
 }

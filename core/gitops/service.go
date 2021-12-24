@@ -1,26 +1,26 @@
-package app
+package gitops
 
 import (
 	"github.com/weaveworks/weave-gitops/core/source"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-type Service interface {
+type AppService interface {
 	Create(name, namespace, description string) App
 	Get(name string) App
 }
 
-func NewService(sourceSvc source.Service) Service {
-	return &defaultService{
+func NewAppService(sourceSvc source.Service) AppService {
+	return &defaultAppService{
 		sourceSvc: sourceSvc,
 	}
 }
 
-type defaultService struct {
+type defaultAppService struct {
 	sourceSvc source.Service
 }
 
-func (d defaultService) Create(name, namespace, description string) App {
+func (d defaultAppService) Create(name, namespace, description string) App {
 	app := App{
 		Id:          string(uuid.NewUUID()),
 		Name:        name,
@@ -31,6 +31,6 @@ func (d defaultService) Create(name, namespace, description string) App {
 	return app
 }
 
-func (d defaultService) Get(name string) App {
+func (d defaultAppService) Get(name string) App {
 	panic("implement me")
 }
