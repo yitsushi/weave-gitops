@@ -9,3 +9,8 @@ const (
 var (
 	ErrNotFound = errors.New("entity not found")
 )
+
+type File struct {
+	Path string
+	Data []byte
+}
