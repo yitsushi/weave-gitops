@@ -6,32 +6,62 @@ import (
 	"io/ioutil"
 	"os"
 
+	repository "github.com/fluxcd/source-controller/api/v1beta1"
 	"github.com/weaveworks/weave-gitops/pkg/git"
-	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 )
 
-type Service interface {
+const (
+	clientName  = "Weave Gitops"
+	clientEmail = "weave-gitops@weave.works"
+)
+
+type GitService interface {
+	AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
 }
 
-func NewService() (Service, error) {
-	return &defaultService{}, nil
+func NewGitService(gitClient git.Git, repo repository.GitRepository) GitService {
+	return &defaultGitService{
+		gitClient: gitClient,
+		repo:      repo,
+	}
 }
 
-type defaultService struct {
+type defaultGitService struct {
+	gitClient git.Git
+	repo      repository.GitRepository
 }
 
-func CloneRepo(ctx context.Context, client git.Git, url gitproviders.RepoURL, branch string) (func(), string, error) {
-	repoDir, err := ioutil.TempDir("", "user-repo-")
+func (d defaultGitService) AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
+	repoDir, err := ioutil.TempDir("", "repo-")
 	if err != nil {
-		return nil, "", fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
+		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
 	}
 
-	_, err = client.Clone(ctx, repoDir, url.String(), branch)
+	_, err = d.gitClient.Clone(ctx, repoDir, d.repo.Spec.URL, branch)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed cloning user repo: %s: %w", url, err)
+		return fmt.Errorf("failed cloning repo: %s: %w", d.repo.Spec.URL, err)
 	}
 
-	return func() {
-		_ = os.RemoveAll(repoDir)
-	}, repoDir, nil
+	defer os.RemoveAll(repoDir)
+
+	for _, file := range files {
+		if err := d.gitClient.Write(file.Path, file.Data); err != nil {
+			return fmt.Errorf("failed to write files: %w", err)
+		}
+	}
+
+	_, err = d.gitClient.Commit(git.Commit{
+		Author:  git.Author{Name: clientName, Email: clientEmail},
+		Message: commitMessage,
+	})
+
+	if err != nil && err != git.ErrNoStagedFiles {
+		return fmt.Errorf("failed to update the repository: %w", err)
+	}
+
+	if err = d.gitClient.Push(ctx); err != nil {
+		return fmt.Errorf("failed to push changes: %w", err)
+	}
+
+	return nil
 }

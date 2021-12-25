@@ -3,6 +3,7 @@ package gitops
 import "errors"
 
 const (
+	baseDir       = ".weave-gitops"
 	FluxNamespace = "wego-system"
 )
 

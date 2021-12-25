@@ -1,26 +1,28 @@
 package gitops
 
 import (
-	"github.com/weaveworks/weave-gitops/core/source"
+	"context"
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type AppService interface {
-	Create(name, namespace, description string) App
+	Create(name, namespace, description string) (App, error)
 	Get(name string) App
 }
 
-func NewAppService(sourceSvc source.Service) AppService {
+func NewAppService(gitService GitService) AppService {
 	return &defaultAppService{
-		sourceSvc: sourceSvc,
+		gitService: gitService,
 	}
 }
 
 type defaultAppService struct {
-	sourceSvc source.Service
+	gitService GitService
 }
 
-func (d defaultAppService) Create(name, namespace, description string) App {
+func (d defaultAppService) Create(name, namespace, description string) (App, error) {
 	app := App{
 		Id:          string(uuid.NewUUID()),
 		Name:        name,
@@ -28,7 +30,15 @@ func (d defaultAppService) Create(name, namespace, description string) App {
 		Description: description,
 	}
 
-	return app
+	files, err := app.Files()
+	if err != nil {
+		return App{}, fmt.Errorf("issue creating app files: %w", err)
+	}
+
+	commitMessage := fmt.Sprintf("Created new app %s", app.Name)
+	d.gitService.AddCommitAndPush(context.Background(), "delta", commitMessage, files)
+
+	return app, nil
 }
 
 func (d defaultAppService) Get(name string) App {

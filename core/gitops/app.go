@@ -14,7 +14,7 @@ const (
 )
 
 func gitopsLabel(suffix string) string {
-	return fmt.Sprintf("%s/%s", labelKey, suffix)
+	return fmt.Sprintf("%s/%s/%s", baseDir, labelKey, suffix)
 }
 
 type App struct {
@@ -61,7 +61,7 @@ func (a App) Files() ([]File, error) {
 		"description": a.Description,
 		"version":     1,
 	}
-	metadataData, err := json.Marshal(metadata)
+	metadataData, err := json.MarshalIndent(metadata, "", "\t")
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal metadata into json: %w", a.Name, err)
 	}

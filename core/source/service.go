@@ -14,6 +14,12 @@ import (
 	"strings"
 
 	repository "github.com/fluxcd/source-controller/api/v1beta1"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/weaveworks/weave-gitops/core/gitops"
+	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/weaveworks/weave-gitops/pkg/git/wrapper"
+	"github.com/weaveworks/weave-gitops/pkg/services/auth"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	k8s "sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,6 +50,7 @@ type K8sObject struct {
 type Service interface {
 	Get(ctx context.Context, name, namespace string) (repository.GitRepository, error)
 	GetArtifact(ctx context.Context, name, namespace string) ([]K8sObject, error)
+	GitClient(ctx context.Context, repository repository.GitRepository) (git.Git, error)
 }
 
 type defaultService struct {
@@ -161,4 +168,26 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 
 		}
 	}
+}
+
+func (gr *defaultService) GitClient(ctx context.Context, repository repository.GitRepository) (git.Git, error) {
+	secret := &corev1.Secret{}
+	if err := gr.client.Get(ctx, types.NamespacedName{
+		Namespace: gitops.FluxNamespace,
+		Name:      repository.Spec.SecretRef.Name,
+	}, secret); apierrors.IsNotFound(err) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("error getting deploy key secret: %w", err)
+	}
+
+	pemBytes := auth.ExtractPrivateKey(secret)
+
+	pubKey, err := ssh.NewPublicKeys("git", pemBytes, "")
+	if err != nil {
+		return nil, fmt.Errorf("could not create public key from secret: %w", err)
+	}
+
+	// Set the git client to use the existing deploy key.
+	return git.New(pubKey, wrapper.NewGoGit()), nil
 }
