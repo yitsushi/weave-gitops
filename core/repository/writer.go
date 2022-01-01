@@ -1,4 +1,4 @@
-package gitops
+package repository
 
 import (
 	"context"
@@ -15,23 +15,28 @@ const (
 	clientEmail = "weave-gitops@weave.works"
 )
 
-type GitService interface {
+type File struct {
+	Path string
+	Data []byte
+}
+
+type GitWriter interface {
 	AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
 }
 
-func NewGitService(gitClient git.Git, repo repository.GitRepository) GitService {
-	return &defaultGitService{
+func NewGitWriter(gitClient git.Git, repo repository.GitRepository) GitWriter {
+	return &defaultGitWriter{
 		gitClient: gitClient,
 		repo:      repo,
 	}
 }
 
-type defaultGitService struct {
+type defaultGitWriter struct {
 	gitClient git.Git
 	repo      repository.GitRepository
 }
 
-func (d defaultGitService) AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
+func (d defaultGitWriter) AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
 	repoDir, err := ioutil.TempDir("", "repo-")
 	if err != nil {
 		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)

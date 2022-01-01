@@ -63,14 +63,14 @@ require (
 	k8s.io/cli-runtime v0.22.1
 	k8s.io/client-go v0.22.2
 	sigs.k8s.io/cli-utils v0.26.0
-	sigs.k8s.io/controller-runtime v0.10.1
+	sigs.k8s.io/controller-runtime v0.10.2
 	sigs.k8s.io/controller-tools v0.5.0
 	sigs.k8s.io/kustomize/api v0.10.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
-	github.com/fluxcd/pkg/untar v0.1.0
+	github.com/fluxcd/notification-controller/api v0.19.0
 	github.com/gin-gonic/gin v1.7.7
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )

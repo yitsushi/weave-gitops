@@ -1,4 +1,4 @@
-package gitops
+package types
 
 import "errors"
 
@@ -10,8 +10,3 @@ const (
 var (
 	ErrNotFound = errors.New("entity not found")
 )
-
-type File struct {
-	Path string
-	Data []byte
-}

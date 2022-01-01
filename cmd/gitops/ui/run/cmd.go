@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/weaveworks/weave-gitops/core/router"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/server"
 	"go.uber.org/zap"
@@ -108,8 +109,15 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		Handler: mux,
 	}
 
+	engine := router.NewRestEngine()
+
 	go func() {
 		log.Infof("Serving on port %s", port)
+
+		if err := engine.Run(addr); err != nil {
+			log.Error(err, "failed to launch gin server, exited")
+			os.Exit(1)
+		}
 
 		if err := srv.ListenAndServe(); err != nil {
 			log.Error(err, "server exited")

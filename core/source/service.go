@@ -10,12 +10,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	repository "github.com/fluxcd/source-controller/api/v1beta1"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/weaveworks/weave-gitops/core/gitops"
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/git/wrapper"
 	"github.com/weaveworks/weave-gitops/pkg/services/auth"
@@ -42,15 +40,15 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-type K8sObject struct {
+type FileJson struct {
 	Path string                 `json:"path"`
 	Data map[string]interface{} `json:"data"`
 }
 
 type Service interface {
 	Get(ctx context.Context, name, namespace string) (repository.GitRepository, error)
-	GetArtifact(ctx context.Context, name, namespace string) ([]K8sObject, error)
-	GitClient(ctx context.Context, repository repository.GitRepository) (git.Git, error)
+	GetArtifact(ctx context.Context, name, namespace string) ([]FileJson, error)
+	GitClient(ctx context.Context, namespace string, repository repository.GitRepository) (git.Git, error)
 }
 
 type defaultService struct {
@@ -78,16 +76,17 @@ func (gr *defaultService) Get(ctx context.Context, name, namespace string) (repo
 	return repoObj, nil
 }
 
-func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace string) ([]K8sObject, error) {
+func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace string) ([]FileJson, error) {
 	repo, err := gr.Get(ctx, name, namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	// download the tarball
-	parsedUrl, _ := url.Parse(repo.GetArtifact().URL)
-	parsedUrl.Host = "localhost:8082"
-	req, err := http.NewRequest(http.MethodGet, parsedUrl.String(), nil)
+	//parsedUrl, _ := url.Parse(repo.GetArtifact().URL)
+	//parsedUrl.Host = "localhost:8082"
+	fmt.Println("This is James")
+	req, err := http.NewRequest(http.MethodGet, repo.GetArtifact().URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request, error: %w", err)
 	}
@@ -112,7 +111,7 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 
 	tr := tar.NewReader(gzr)
 
-	var delta []K8sObject
+	var delta []FileJson
 
 	for {
 		header, err := tr.Next()
@@ -161,7 +160,7 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 				return nil, err
 			}
 
-			delta = append(delta, K8sObject{
+			delta = append(delta, FileJson{
 				Path: header.Name,
 				Data: obj,
 			})
@@ -170,10 +169,10 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 	}
 }
 
-func (gr *defaultService) GitClient(ctx context.Context, repository repository.GitRepository) (git.Git, error) {
+func (gr *defaultService) GitClient(ctx context.Context, namespace string, repository repository.GitRepository) (git.Git, error) {
 	secret := &corev1.Secret{}
 	if err := gr.client.Get(ctx, types.NamespacedName{
-		Namespace: gitops.FluxNamespace,
+		Namespace: namespace,
 		Name:      repository.Spec.SecretRef.Name,
 	}, secret); apierrors.IsNotFound(err) {
 		return nil, ErrNotFound
