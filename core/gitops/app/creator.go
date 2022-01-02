@@ -1,4 +1,4 @@
-package gitops
+package app
 
 import (
 	"context"
@@ -9,22 +9,21 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-type AppService interface {
+type Creator interface {
 	Create(name, namespace, description string) (types.App, error)
-	Get(name string) types.App
 }
 
-func NewAppService(gitService repository.GitWriter) AppService {
-	return &defaultAppService{
+func NewCreator(gitService repository.GitWriter) Creator {
+	return &appCreator{
 		gitService: gitService,
 	}
 }
 
-type defaultAppService struct {
+type appCreator struct {
 	gitService repository.GitWriter
 }
 
-func (d defaultAppService) Create(name, namespace, description string) (types.App, error) {
+func (d appCreator) Create(name, namespace, description string) (types.App, error) {
 	app := types.App{
 		Id:          string(uuid.NewUUID()),
 		Name:        name,
@@ -44,8 +43,4 @@ func (d defaultAppService) Create(name, namespace, description string) (types.Ap
 	}
 
 	return app, nil
-}
-
-func (d defaultAppService) Get(name string) types.App {
-	panic("implement me")
 }

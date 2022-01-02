@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/weaveworks/weave-gitops/core/gitops/app"
 
-	"github.com/weaveworks/weave-gitops/core/gitops"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"github.com/weaveworks/weave-gitops/core/source"
@@ -21,6 +21,7 @@ type appRequest struct {
 
 func createApp(c *gin.Context) {
 	var b appRequest
+
 	err := c.BindJSON(&b)
 	if err != nil {
 		c.String(http.StatusBadRequest, "%s", err)
@@ -28,27 +29,65 @@ func createApp(c *gin.Context) {
 
 	_, client, err := kube.NewKubeHTTPClient()
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 	}
 
 	repoSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
 
 	repo, err := repoSvc.Get(context.Background(), c.Param("name"), types.FluxNamespace)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 	}
 
 	gitClient, err := repoSvc.GitClient(context.Background(), types.FluxNamespace, repo)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 	}
 
 	gitSvc := repository.NewGitWriter(gitClient, repo)
-	appSvc := gitops.NewAppService(gitSvc)
+	appSvc := app.NewCreator(gitSvc)
 
 	app, err := appSvc.Create(b.Name, b.Namespace, b.Description)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
+	}
+
+	c.JSON(http.StatusOK, app)
+}
+
+func listApps(c *gin.Context) {
+	_, client, err := kube.NewKubeHTTPClient()
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	sourceSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
+	appFetcher := app.NewFetcher(sourceSvc)
+
+	apps, err := appFetcher.List(context.Background(), c.Param("name"), types.FluxNamespace)
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	if len(apps) == 0 {
+		c.String(http.StatusOK, "[]")
+	} else {
+		c.JSON(http.StatusOK, apps)
+	}
+}
+
+func getApp(c *gin.Context) {
+	_, client, err := kube.NewKubeHTTPClient()
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	sourceSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
+	appFetcher := app.NewFetcher(sourceSvc)
+
+	app, err := appFetcher.Get(context.Background(), c.Param("appName"), c.Param("name"), types.FluxNamespace)
+	if err != nil {
+		_ = c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, app)
