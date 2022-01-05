@@ -400,25 +400,11 @@ func (k *KubeHTTP) SetResource(ctx context.Context, resource Resource) error {
 }
 
 func (k *KubeHTTP) SetWegoConfig(ctx context.Context, config WegoConfig, namespace string) (*corev1.ConfigMap, error) {
-	configBytes, err := kyaml.Marshal(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed marshalling wego config: %w", err)
-	}
-
 	name := types.NamespacedName{Name: WegoConfigMapName, Namespace: namespace}
 
-	cm := &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: corev1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name.Name,
-			Namespace: name.Namespace,
-		},
-		Data: map[string]string{
-			"config": string(configBytes),
-		},
+	cm, err := MakeWegoConfig(config, namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	orginalCm := cm.DeepCopy()
@@ -435,7 +421,7 @@ func (k *KubeHTTP) SetWegoConfig(ctx context.Context, config WegoConfig, namespa
 		return nil, fmt.Errorf("failed getting weave-gitops configmap: %w", err)
 	}
 
-	cm.Data["config"] = string(configBytes)
+	cm.Data["config"] = originalCm.Data["config"]
 
 	if err = k.Client.Update(ctx, cm); err != nil {
 		return nil, fmt.Errorf("failed updating weave-gitops configmap: %w", err)

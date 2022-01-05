@@ -4,6 +4,7 @@ package install
 // gitops installed, the user will be prompted to install gitops and then the repository will be added.
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"errors"
@@ -151,7 +152,11 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 
 	if installParams.DryRun {
 		for _, manifest := range manifests {
-			log.Println(string(manifest.Content))
+			manifest = bytes.Trim(manifest, " \n")
+			if !bytes.HasPrefix(manifest, []byte("---")) {
+				log.Println("---")
+			}
+			log.Println(string(manifest))
 		}
 
 		return nil

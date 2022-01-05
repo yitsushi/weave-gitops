@@ -8,10 +8,12 @@ import (
 
 	wego "github.com/weaveworks/weave-gitops/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 type Resource interface {
@@ -82,4 +84,29 @@ func IsClusterReady(l logger.Logger, k Kube) error {
 	l.Successf(clusterStatus.String())
 
 	return nil
+}
+
+func MakeWegoConfig(config WegoConfig, namespace string) (*corev1.ConfigMap, error) {
+	configBytes, err := kyaml.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed marshalling wego config: %w", err)
+	}
+
+	name := types.NamespacedName{Name: WegoConfigMapName, Namespace: namespace}
+
+	cm := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: corev1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+		},
+		Data: map[string]string{
+			"config": string(configBytes),
+		},
+	}
+
+	return cm, nil
 }

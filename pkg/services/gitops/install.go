@@ -65,33 +65,33 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 	systemManifests["gitops-runtime.yaml"] = fluxManifests
 	systemManifests["wego-system.yaml"] = manifests.AppCRD
 
-	if params.DryRun {
-		return systemManifests, nil
-	} else {
+	if !params.DryRun {
 		if err := g.kube.Apply(ctx, manifests.AppCRD, params.Namespace); err != nil {
 			return nil, fmt.Errorf("could not apply App CRD: %w", err)
 		}
+	}
 
-		version := version.Version
-		if os.Getenv("IS_TEST_ENV") != "" {
-			version = "latest"
-		}
+	version := version.Version
+	if os.Getenv("IS_TEST_ENV") != "" {
+		version = "latest"
+	}
 
-		wegoAppManifests, err := manifests.GenerateManifests(manifests.Params{
-			AppVersion: version,
-			Namespace:  params.Namespace,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error generating wego-app manifests, %w", err)
-		}
+	wegoAppManifests, err := manifests.GenerateManifests(manifests.Params{
+		AppVersion: version,
+		Namespace:  params.Namespace,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error generating wego-app manifests, %w", err)
+	}
+	if !params.DryRun {
 		for _, m := range wegoAppManifests {
 			if err := g.kube.Apply(ctx, m, params.Namespace); err != nil {
 				return nil, fmt.Errorf("error applying wego-app manifest \n%s: %w", m, err)
 			}
 		}
-
-		systemManifests["wego-app.yaml"] = bytes.Join(wegoAppManifests, []byte("---\n"))
 	}
+
+	systemManifests["wego-app.yaml"] = bytes.Join(wegoAppManifests, []byte("---\n"))
 
 	wegoConfigCM, err := g.saveWegoConfig(ctx, params)
 	if err != nil {
@@ -321,10 +321,16 @@ func (g *Gitops) saveWegoConfig(ctx context.Context, params InstallParams) (*cor
 		}
 	}
 
-	cm, err := g.kube.SetWegoConfig(ctx, kube.WegoConfig{
+	config := kube.WegoConfig{
 		FluxNamespace: fluxNamespace,
 		WegoNamespace: params.Namespace,
-	}, params.Namespace)
+	}
+	var cm *corev1.ConfigMap
+	if !params.DryRun {
+		cm, err = g.kube.SetWegoConfig(ctx, config, params.Namespace)
+	} else {
+		cm, err = kube.MakeWegoConfig(config, params.Namespace)
+	}
 	if err != nil {
 		return nil, err
 	}
