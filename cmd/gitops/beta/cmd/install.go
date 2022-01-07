@@ -11,6 +11,7 @@ import (
 
 	"github.com/weaveworks/weave-gitops/cmd/internal"
 	"github.com/weaveworks/weave-gitops/pkg/flux"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/osys"
 	"github.com/weaveworks/weave-gitops/pkg/runner"
@@ -71,10 +72,15 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 
 	gitopsService := gitops.New(log, fluxClient, k)
 
+	repoURL, err := gitproviders.NewRepoURL(installParams.ConfigRepo)
+	if err != nil {
+		return fmt.Errorf("invalid repo url: %w", err)
+	}
+
 	gitOpsParams := gitops.InstallParams{
 		Namespace:  namespace,
 		DryRun:     installParams.DryRun,
-		ConfigRepo: installParams.ConfigRepo,
+		ConfigRepo: repoURL,
 	}
 
 	manifests, err := gitopsService.Install(gitOpsParams)

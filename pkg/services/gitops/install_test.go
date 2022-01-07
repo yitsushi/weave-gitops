@@ -13,6 +13,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/git/gitfakes"
 	"github.com/weaveworks/weave-gitops/pkg/git/wrapper"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/kube/kubefakes"
@@ -244,7 +245,9 @@ var _ = Describe("Install", func() {
 	})
 	Context("when app url specified", func() {
 		BeforeEach(func() {
-			installParams.ConfigRepo = "ssh://git@github.com/foo/somevalidrepo.git"
+			repoURL, err := gitproviders.NewRepoURL("ssh://git@github.com/foo/somevalidrepo.git")
+			Expect(err).NotTo(HaveOccurred())
+			installParams.ConfigRepo = repoURL
 			fluxClient.InstallReturns(fakeFluxManifests, nil)
 			manifestsByPath = map[string][]byte{}
 
@@ -282,7 +285,9 @@ var _ = Describe("Install", func() {
 	})
 	Context("when app url specified && dry-run", func() {
 		BeforeEach(func() {
-			installParams.ConfigRepo = "ssh://git@github.com/foo/somevalidrepo.git"
+			repoURL, err := gitproviders.NewRepoURL("ssh://git@github.com/foo/somevalidrepo.git")
+			Expect(err).NotTo(HaveOccurred())
+			installParams.ConfigRepo = repoURL
 			installParams.DryRun = true
 			fluxClient.InstallReturns(fakeFluxManifests, nil)
 		})

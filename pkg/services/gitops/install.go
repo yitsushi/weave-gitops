@@ -27,7 +27,7 @@ import (
 type InstallParams struct {
 	Namespace  string
 	DryRun     bool
-	ConfigRepo string
+	ConfigRepo gitproviders.RepoURL
 }
 
 func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
@@ -45,7 +45,7 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 
 	var err error
 
-	if params.ConfigRepo != "" || params.DryRun {
+	if params.ConfigRepo.String() != "" || params.DryRun {
 		// We need to get the manifests to persist in the repo and
 		// non-dry run install doesn't return them
 		fluxManifests, err = g.flux.Install(params.Namespace, true)
@@ -111,7 +111,7 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 func (g *Gitops) StoreManifests(gitClient git.Git, gitProvider gitproviders.GitProvider, params InstallParams, systemManifests map[string][]byte) (map[string][]byte, error) {
 	ctx := context.Background()
 
-	if !params.DryRun && params.ConfigRepo != "" {
+	if !params.DryRun {
 		cname, err := g.kube.GetClusterName(ctx)
 		if err != nil {
 			g.logger.Warningf("Cluster name not found, using default : %v", err)
@@ -161,17 +161,12 @@ func (g *Gitops) validateWegoInstall(ctx context.Context, params InstallParams) 
 func (g *Gitops) storeManifests(gitClient git.Git, gitProvider gitproviders.GitProvider, params InstallParams, systemManifests map[string][]byte, cname string) (map[string][]byte, error) {
 	ctx := context.Background()
 
-	normalizedURL, err := gitproviders.NewRepoURL(params.ConfigRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert app config repo %q : %w", params.ConfigRepo, err)
-	}
-
-	configBranch, err := gitProvider.GetDefaultBranch(ctx, normalizedURL)
+	configBranch, err := gitProvider.GetDefaultBranch(ctx, params.ConfigRepo)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine default branch for config repository: %q %w", params.ConfigRepo, err)
 	}
 
-	remover, _, err := gitrepo.CloneRepo(ctx, gitClient, normalizedURL, configBranch)
+	remover, _, err := gitrepo.CloneRepo(ctx, gitClient, params.ConfigRepo, configBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to clone configuration repo: %w", err)
 	}
@@ -181,7 +176,7 @@ func (g *Gitops) storeManifests(gitClient git.Git, gitProvider gitproviders.GitP
 	manifests := make(map[string][]byte, 3)
 	clusterPath := filepath.Join(git.WegoRoot, git.WegoClusterDir, cname)
 
-	gitsource, sourceName, err := g.genSource(configBranch, params.Namespace, normalizedURL)
+	gitsource, sourceName, err := g.genSource(configBranch, params.Namespace, params.ConfigRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source manifest: %w", err)
 	}
