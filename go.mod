@@ -115,6 +115,7 @@ require (
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fluxcd/pkg/apis/acl v0.0.1 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v0.3.0 // indirect
+	github.com/fluxcd/pkg/gittestserver v0.5.0
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/getkin/kin-openapi v0.61.0 // indirect
@@ -230,6 +231,11 @@ require (
 	oras.land/oras-go v0.4.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
+)
+
+require (
+	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/sosedoff/gitkit v0.2.1-0.20200818155723-72ebbcf5056d // indirect
 )
 
 // fix CVE-2021-41103

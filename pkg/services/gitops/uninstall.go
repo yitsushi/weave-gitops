@@ -11,8 +11,10 @@ import (
 )
 
 type UninstallParams struct {
-	Namespace string
-	DryRun    bool
+	Namespace                     string
+	DryRun                        bool
+	RemoveClusterRecord           bool
+	RemoveApplicationsFromCluster bool
 }
 
 type UninstallError struct{}

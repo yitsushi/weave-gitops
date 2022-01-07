@@ -135,13 +135,16 @@ func MakeFakeLogr() *fakelogr.FakeLogger {
 }
 
 type LocalFluxRunner struct {
+	Path string
 	runner.Runner
 }
 
 func (r *LocalFluxRunner) Run(command string, args ...string) ([]byte, error) {
-	cmd := "../flux/bin/flux"
+	if r.Path == "" {
+		r.Path = "../flux/bin/flux"
+	}
 
-	return r.Runner.Run(cmd, args...)
+	return r.Runner.Run(r.Path, args...)
 }
 
 type DummyPullRequest struct {

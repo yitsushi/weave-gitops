@@ -1,8 +1,10 @@
 package gitops_test
 
 import (
-	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
 	"testing"
+
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
+	"github.com/weaveworks/weave-gitops/pkg/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,9 +23,23 @@ var (
 	logger       *loggerfakes.FakeLogger
 
 	gitopsSrv gitops.GitopsService
+	env       *testutils.K8sTestEnv
+	err       error
 )
 
 func TestGitops(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Gitops Suite")
 }
+
+var _ = BeforeSuite(func() {
+	env, err = testutils.StartK8sTestEnvironment([]string{
+		"../../../manifests/crds",
+		"../../../tools/testcrds",
+	})
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = AfterSuite(func() {
+	env.Stop()
+})

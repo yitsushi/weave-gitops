@@ -4,17 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/fluxcd/pkg/gittestserver"
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	wego "github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/manifests"
 	"github.com/weaveworks/weave-gitops/pkg/flux/fluxfakes"
+	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/weaveworks/weave-gitops/pkg/git/wrapper"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
+	"github.com/weaveworks/weave-gitops/pkg/gitproviders/gitprovidersfakes"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
 	"github.com/weaveworks/weave-gitops/pkg/kube/kubefakes"
 	"github.com/weaveworks/weave-gitops/pkg/logger/loggerfakes"
 	"github.com/weaveworks/weave-gitops/pkg/services/gitops"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 var uninstallParams gitops.UninstallParams
@@ -221,6 +232,100 @@ var _ = Describe("Uninstall", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Expect(kubeClient.DeleteCallCount()).To(Equal(0))
+		})
+	})
+	FDescribe("Actual Uninstall tests", func() {
+		var (
+			gOps        gitops.GitopsService
+			gitServer   *gittestserver.GitServer
+			namespace   *corev1.Namespace
+			localGitDir string
+		)
+
+		BeforeEach(func() {
+			gitServer, err = gittestserver.NewTempGitServer()
+
+			username := "test-user"
+			password := "test-password"
+
+			gitServer.Auth(username, password)
+			gitServer = gitServer.AutoCreate()
+			repoPath := "bar/test-reponame"
+
+			Expect(gitServer.InitRepo("testdata/git/repo1", "main", repoPath)).To(Succeed())
+
+			errc := make(chan error)
+			go func() {
+				errc <- gitServer.StartHTTP()
+			}()
+
+			select {
+			case err := <-errc:
+				Expect(err).NotTo(HaveOccurred())
+				break
+			case <-time.After(time.Second):
+				break
+			}
+
+			addr := gitServer.HTTPAddressWithCredentials() + "/" + repoPath
+
+			fluxClient := &fluxfakes.FakeFlux{}
+			fluxClient.InstallReturns([]byte{}, nil)
+
+			k8s, _, err := kube.NewKubeHTTPClientWithConfig(env.Rest, "test-context")
+			Expect(err).NotTo(HaveOccurred())
+
+			namespace = &corev1.Namespace{}
+			namespace.Name = "kube-test-" + rand.String(5)
+			Expect(err).NotTo(HaveOccurred(), "failed to create test namespace")
+			Expect(k8s.Raw().Create(context.Background(), namespace))
+
+			gOps = gitops.New(&loggerfakes.FakeLogger{}, fluxClient, k8s)
+
+			params := gitops.InstallParams{
+				Namespace:  namespace.Name,
+				DryRun:     false,
+				ConfigRepo: gitproviders.RepoURL{},
+			}
+
+			m, err := gOps.Install(params)
+			Expect(err).NotTo(HaveOccurred())
+
+			localGitDir, err = os.MkdirTemp("", "test-repo")
+			Expect(err).NotTo(HaveOccurred())
+
+			gg := wrapper.NewGoGit()
+
+			_, err = gg.PlainCloneContext(context.Background(), localGitDir, false, &gogit.CloneOptions{
+				URL: addr,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			gc := git.New(&http.BasicAuth{Username: username, Password: password}, gg)
+			gc.Open(repoPath)
+
+			// _, err = gc.Clone(context.Background(), localGitDir, addr, "main")
+			// Expect(err).NotTo(HaveOccurred())
+
+			gp := &gitprovidersfakes.FakeGitProvider{}
+			gp.GetDefaultBranchReturns("main", nil)
+
+			_, err = gOps.StoreManifests(gc, gp, params, m)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		AfterEach(func() {
+			gitServer.StopHTTP()
+			Expect(os.RemoveAll(gitServer.Root())).To(Succeed())
+			Expect(os.RemoveAll(localGitDir)).To(Succeed())
+		})
+		It("runs?", func() {
+			entries, err := os.ReadDir(gitServer.Root())
+			Expect(err).NotTo(HaveOccurred())
+
+			for _, e := range entries {
+				fmt.Println(e.Name())
+			}
+
 		})
 	})
 })
