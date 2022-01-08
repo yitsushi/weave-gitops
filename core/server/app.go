@@ -24,24 +24,24 @@ func newProtoApp(a types.App) *pb.App {
 type appServer struct {
 	pb.UnimplementedAppsServer
 
-	fetcher app.Fetcher
-	repoSvc source.Service
+	fetcher   app.Fetcher
+	sourceSvc source.Service
 }
 
-func NewAppServer(fetcher app.Fetcher, repoSvc source.Service) pb.AppsServer {
+func NewAppServer(fetcher app.Fetcher, sourceSvc source.Service) pb.AppsServer {
 	return &appServer{
-		fetcher: fetcher,
-		repoSvc: repoSvc,
+		fetcher:   fetcher,
+		sourceSvc: sourceSvc,
 	}
 }
 
 func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddAppResponse, error) {
-	repo, err := a.repoSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
+	repo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
 	}
 
-	gitClient, err := a.repoSvc.GitClient(context.Background(), types.FluxNamespace, repo)
+	gitClient, err := a.sourceSvc.GitClient(context.Background(), types.FluxNamespace, repo)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get git client: %s", err.Error())
 	}

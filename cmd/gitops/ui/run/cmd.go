@@ -108,8 +108,6 @@ func runCmd(cmd *cobra.Command, args []string) error {
 		Handler: mux,
 	}
 
-	//engine := router.NewRestEngine()
-
 	go func() {
 		log.Infof("Serving on port %s", port)
 

@@ -20,7 +20,7 @@ func Hydrate(ctx context.Context, mux *runtime.ServeMux) error {
 	sourceSvc := source.NewService(k8sClient, source.GitopsRuntimeExclusionList)
 	appFetcher := app.NewFetcher(sourceSvc)
 
-	newAppServer := NewAppServer(appFetcher)
+	newAppServer := NewAppServer(appFetcher, sourceSvc)
 	if err := pb.RegisterAppsHandlerServer(ctx, mux, newAppServer); err != nil {
 		return fmt.Errorf("could not register new app: %w", err)
 	}
