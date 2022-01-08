@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/weaveworks/weave-gitops/core/server"
 	pbapp "github.com/weaveworks/weave-gitops/pkg/api/applications"
 	pbprofiles "github.com/weaveworks/weave-gitops/pkg/api/profiles"
 	"github.com/weaveworks/weave-gitops/pkg/server/middleware"
@@ -33,6 +34,10 @@ func NewHandlers(ctx context.Context, cfg *Config) (http.Handler, error) {
 
 	if err := pbprofiles.RegisterProfilesHandlerServer(ctx, mux, profilesSrv); err != nil {
 		return nil, fmt.Errorf("could not register profiles: %w", err)
+	}
+
+	if err := server.Hydrate(ctx, mux); err != nil {
+		return nil, fmt.Errorf("could not start up core servers: %w", err)
 	}
 
 	return httpHandler, nil

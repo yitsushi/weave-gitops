@@ -29,7 +29,11 @@ func (af appFetcher) Get(ctx context.Context, appName, repoName, namespace strin
 		return types.App{}, fmt.Errorf("appFetcher.Get could not get apps: %w", err)
 	}
 
-	return apps[appName], nil
+	if app, ok := apps[appName]; !ok {
+		return types.App{}, types.ErrNotFound
+	} else {
+		return app, nil
+	}
 }
 
 func (af appFetcher) List(ctx context.Context, repoName, namespace string) ([]types.App, error) {
