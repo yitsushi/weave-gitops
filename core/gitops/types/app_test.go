@@ -58,6 +58,6 @@ func TestAppFilesSuccess(t *testing.T) {
 	files, err := app.Files()
 	f.Expect(err).To(BeNil())
 	f.Expect(len(files)).To(Equal(2))
-	f.Expect(files[0].Path).To(Equal(app.path(kustomizationFilename)))
-	f.Expect(files[1].Path).To(Equal(app.path(metadataFilename)))
+	f.Expect(files[0].Path).To(Equal(app.path(appFilename)))
+	f.Expect(files[1].Path).To(Equal(app.path(kustomizationFilename)))
 }

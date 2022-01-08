@@ -40,6 +40,8 @@ type ApplicationSpec struct {
 	SourceType SourceType `json:"source_type,omitempty"`
 	// HelmTargetNamespace is the namespace in which to deploy an added Helm Chart
 	HelmTargetNamespace string `json:"helm_target_namespace,omitempty"`
+	// Description is a description of the application
+	Description string `json:"description"`
 }
 
 // +kubebuilder:validation:Enum=helm;kustomize

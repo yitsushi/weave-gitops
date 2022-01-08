@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/core/source"
 	"sigs.k8s.io/kustomize/api/types"
 )
@@ -30,10 +31,15 @@ func FileJsonToApps(files []source.FileJson) (map[string]App, error) {
 
 		app := apps[appName]
 
-		isMetadataFile := strings.HasSuffix(file.Path, metadataFilename)
-		if isMetadataFile {
-			app.Id = file.Data[idField].(string)
-			app.Description = file.Data[descriptionField].(string)
+		isAppFile := strings.HasSuffix(file.Path, appFilename)
+		if isAppFile {
+			var appResource v1alpha1.Application
+			err := mapstructure.Decode(file.Data, &appResource)
+			if err != nil {
+				return nil, fmt.Errorf("could not decode kustomization file into struct: %w", err)
+			}
+
+			app.Description = appResource.Spec.Description
 		} else if isKustomizationFile(file.Path) {
 			var kustomization types.Kustomization
 			err := mapstructure.Decode(file.Data, &kustomization)
@@ -42,6 +48,7 @@ func FileJsonToApps(files []source.FileJson) (map[string]App, error) {
 			}
 
 			app.Namespace = kustomization.MetaData.Namespace
+			app.Id = kustomization.CommonLabels[gitopsLabel("app-id")]
 		}
 
 		apps[appName] = app

@@ -1,17 +1,22 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/core/repository"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/yaml"
 )
 
 const (
-	labelKey              = "app.weave.works.gitops"
+	ApplicationKind    = "Application"
+	ApplicationVersion = "gitops.weave.works/v1alpha1"
+
+	labelKey              = "gitops.weave.works"
+	appFilename           = "app.yaml"
 	kustomizationFilename = "kustomization.yaml"
 	metadataFilename      = "metadata.json"
 
@@ -26,6 +31,10 @@ var (
 
 func appPath(name, fileName string) string {
 	return fmt.Sprintf("%s/apps/%s/%s", baseDir, name, fileName)
+}
+
+func currentPath(fileName string) string {
+	return fmt.Sprintf("./%s", fileName)
 }
 
 func isKustomizationFile(path string) bool {
@@ -91,42 +100,54 @@ func (a App) Kustomization() types.Kustomization {
 		MetaData: &types.ObjectMeta{
 			Name:      a.Name,
 			Namespace: a.Namespace,
-			Annotations: map[string]string{
-				gitopsLabel("app-id"):          a.Id,
-				gitopsLabel("app-description"): a.Description,
-				gitopsLabel("app-version"):     "v1beta1",
-			},
 		},
 		CommonLabels: map[string]string{
-			gitopsLabel("app"): a.Name,
+			gitopsLabel("app-id"): a.Id,
 		},
 	}
 
 	return k
 }
 
+func (a App) CustomResource() v1alpha1.Application {
+	return v1alpha1.Application{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Application",
+			APIVersion: "gitops.weave.works/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      a.Name,
+			Namespace: a.Namespace,
+		},
+		Spec: v1alpha1.ApplicationSpec{
+			Description: a.Description,
+		},
+		Status: v1alpha1.ApplicationStatus{},
+	}
+}
+
 func (a App) Files() ([]repository.File, error) {
 	var files []repository.File
 
-	kustomizeData, err := yaml.Marshal(a.Kustomization())
+	var kustomizeResources []string
+
+	customResource, err := yaml.Marshal(a.CustomResource())
+	if err != nil {
+		return nil, fmt.Errorf("app %s marshal custom resource into yaml: %w", a.Name, err)
+	}
+
+	files = append(files, repository.File{Path: a.path(appFilename), Data: customResource})
+	kustomizeResources = append(kustomizeResources, currentPath(appFilename))
+
+	kustomization := a.Kustomization()
+	kustomization.Resources = kustomizeResources
+	
+	kustomizeData, err := yaml.Marshal(kustomization)
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
 	}
 
 	files = append(files, repository.File{Path: a.path(kustomizationFilename), Data: kustomizeData})
-
-	metadata := map[string]interface{}{
-		idField:          a.Id,
-		descriptionField: a.Description,
-		versionField:     1,
-	}
-
-	metadataData, err := json.MarshalIndent(metadata, "", "\t")
-	if err != nil {
-		return nil, fmt.Errorf("app %s marshal metadata into json: %w", a.Name, err)
-	}
-
-	files = append(files, repository.File{Path: a.path(metadataFilename), Data: metadataData})
 
 	return files, nil
 }

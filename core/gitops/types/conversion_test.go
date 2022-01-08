@@ -20,15 +20,19 @@ func setUpConversionTest(t *testing.T) appFixture {
 
 func TestConvertApp(t *testing.T) {
 	f := setUpConversionTest(t)
-	metadata := map[string]interface{}{
-		idField:          "12345",
-		descriptionField: "This is a test app",
-		versionField:     1,
-	}
-
-	metadataFile := source.FileJson{
-		Path: appPath("app-1", metadataFilename),
-		Data: metadata,
+	applicationFile := source.FileJson{
+		Path: appPath("app-1", appFilename),
+		Data: map[string]interface{}{
+			"kind":       ApplicationKind,
+			"apiVersion": ApplicationVersion,
+			"metadata": map[string]interface{}{
+				"name":      "app-1",
+				"namespace": testNamespace,
+			},
+			"spec": map[string]interface{}{
+				"description": "This is a test app",
+			},
+		},
 	}
 
 	kustomization := map[string]interface{}{
@@ -37,14 +41,9 @@ func TestConvertApp(t *testing.T) {
 		"metadata": map[string]interface{}{
 			"name":      "app-1",
 			"namespace": testNamespace,
-			"annotations": map[string]string{
-				gitopsLabel("app-id"):          "12345",
-				gitopsLabel("app-description"): "This is a test app",
-				gitopsLabel("app-version"):     "v1beta1",
-			},
 		},
 		"commonLabels": map[string]string{
-			gitopsLabel("app"): "app-1",
+			gitopsLabel("app-id"): "12345",
 		},
 	}
 
@@ -54,8 +53,8 @@ func TestConvertApp(t *testing.T) {
 	}
 
 	var files = []source.FileJson{
+		applicationFile,
 		kustomizationFile,
-		metadataFile,
 	}
 
 	apps, err := FileJsonToApps(files)

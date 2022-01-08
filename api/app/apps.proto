@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package gitops_server.v1;
+
+option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
+
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Weave GitOps Application API",
+    version: "0.1";
+    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications";
+  };
+  consumes: "apps/json";
+  produces: "apps/json";
+};
+
+message App {
+  string name = 1;  // The name of the application
+  string description = 2;  // The git repository URL for this application
+  string display_name = 3;  // The file path where the k8s yaml files for this application are stored.
+}
+
+message AddAppRequest {
+  string name = 1;
+  string description = 2;
+  string display_name = 3;
+}
+
+message AddAppResponse {
+  bool success = 1;
+  App app = 2;
+}
+
+message GetAppRequest {
+  string name = 1;  // The name of an application
+  string namespace = 2;  // The kubernetes namespace of the application.`
+}
+
+message GetAppResponse {
+  App app = 1;
+}
+
+message ListAppRequest {
+  string namespace = 1;  // The namespace to look for applications
+}
+
+message ListAppResponse {
+  repeated App apps = 1; // A list of applications
+}
+
+message RemoveAppRequest {
+  string name = 1;
+  string namespace = 2;
+  bool   autoMerge = 3;
+}
+
+message RemoveAppResponse {
+  bool success = 1;
+}
+
+service Apps {
+  /*
+    * AddApplication adds an Application to a cluster via GitOps.
+    */
+  rpc AddApp(AddAppRequest) returns (AddAppResponse) {
+    option (google.api.http) = {
+      post : "/v1/applications"
+      body: "*"
+    };
+  }
+
+  /**
+  * GetApplication returns a given application
+  */
+  rpc GetApp(GetAppRequest) returns (GetAppResponse) {
+    option (google.api.http) = {
+      get : "/v1/applications/{name}"
+    };
+  }
+
+  /**
+     * ListApplications returns the list of WeGo applications that the authenticated user has access to.
+    */
+  rpc ListApps(ListAppRequest) returns (ListAppResponse) {
+    option (google.api.http) = {
+      get : "/v1/applications"
+    };
+  }
+
+  /*
+  * RemoveApplication removes an Application from a cluster via GitOps.
+  */
+  rpc RemoveApp(RemoveAppRequest) returns (RemoveAppResponse) {
+    option (google.api.http) = {
+      delete : "/v1/applications/{name}"
+      body: "*"
+    };
+  }
+}

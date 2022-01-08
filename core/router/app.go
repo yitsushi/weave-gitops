@@ -47,12 +47,55 @@ func createApp(c *gin.Context) {
 	gitSvc := repository.NewGitWriter(gitClient, repo)
 	appSvc := app.NewCreator(gitSvc)
 
-	app, err := appSvc.Create(b.Name, b.Namespace, b.Description)
+	app, err := appSvc.Create(b.Name, b.Namespace, b.Description, "delta")
 	if err != nil {
 		_ = c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, app)
+}
+
+func deleteApp(c *gin.Context) {
+	var b appRequest
+
+	err := c.BindJSON(&b)
+	if err != nil {
+		c.String(http.StatusBadRequest, "%s", err)
+	}
+
+	_, client, err := kube.NewKubeHTTPClient()
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	repoSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
+
+	repo, err := repoSvc.Get(context.Background(), c.Param("name"), types.FluxNamespace)
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	gitClient, err := repoSvc.GitClient(context.Background(), types.FluxNamespace, repo)
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	gitSvc := repository.NewGitWriter(gitClient, repo)
+	appFetcher := app.NewFetcher(repoSvc)
+
+	appObj, err := appFetcher.Get(context.Background(), c.Param("appName"), c.Param("name"), types.FluxNamespace)
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	appRemover := app.NewRemover(gitSvc)
+
+	err = appRemover.Remove(appObj, "delta")
+	if err != nil {
+		_ = c.Error(err)
+	}
+
+	c.String(http.StatusNoContent, "")
 }
 
 func listApps(c *gin.Context) {

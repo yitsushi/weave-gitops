@@ -22,6 +22,7 @@ type File struct {
 
 type GitWriter interface {
 	AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
+	RemoveCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
 }
 
 func NewGitWriter(gitClient git.Git, repo repository.GitRepository) GitWriter {
@@ -55,7 +56,34 @@ func (d defaultGitWriter) AddCommitAndPush(ctx context.Context, branch, commitMe
 		}
 	}
 
-	_, err = d.gitClient.Commit(git.Commit{
+	return d.commitAndPush(ctx, commitMessage)
+}
+
+func (d defaultGitWriter) RemoveCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
+	repoDir, err := ioutil.TempDir("", "repo-")
+	if err != nil {
+		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
+	}
+
+	_, err = d.gitClient.Clone(ctx, repoDir, d.repo.Spec.URL, branch)
+	if err != nil {
+		return fmt.Errorf("failed cloning repo: %s: %w", d.repo.Spec.URL, err)
+	}
+
+	defer os.RemoveAll(repoDir)
+
+	for _, file := range files {
+		err = d.gitClient.Remove(file.Path)
+		if err != nil {
+			return fmt.Errorf("failed to remove files: %w", err)
+		}
+	}
+
+	return d.commitAndPush(ctx, commitMessage)
+}
+
+func (d defaultGitWriter) commitAndPush(ctx context.Context, commitMessage string) error {
+	_, err := d.gitClient.Commit(git.Commit{
 		Author:  git.Author{Name: clientName, Email: clientEmail},
 		Message: commitMessage,
 	})
