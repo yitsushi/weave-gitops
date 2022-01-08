@@ -6,11 +6,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/cmd/internal"
-	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/weaveworks/weave-gitops/core/repository"
 )
 
 type params struct {
@@ -46,20 +47,35 @@ func init() {
 }
 
 func installRunCmd(cmd *cobra.Command, args []string) error {
-	branch, err := internal.LocalBranch()
+	dir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("unable to determine local directory: %w", err)
+	}
+
+	repo, err := internal.GitRepository(dir)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%s\n", branch)
+	files := []repository.File{
+		{
+			Path: "example-git-file-2.txt",
+			Data: []byte("hello world!"),
+		},
+		{
+			Path: "example-git-file-3.txt",
+			Data: []byte("hello world!"),
+		},
+		{
+			Path: "example-git-file-4.txt",
+			Data: []byte("hello world!"),
+		},
+	}
 
-	config :=
+	adder := repository.NewAdder()
+	adder.Add(repo, "new commit", files)
 
-		git.Commit{
-			Author:  git.Author{},
-			Hash:    "",
-			Message: "",
-		}
+	//fmt.Printf("%s\n", branch)
 
 	return nil
 }

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	clientName  = "Weave Gitops"
-	clientEmail = "weave-gitops@weave.works"
+	ClientName  = "Weave Gitops"
+	ClientEmail = "weave-gitops@weave.works"
 )
 
 type File struct {
@@ -84,7 +84,7 @@ func (d defaultGitWriter) RemoveCommitAndPush(ctx context.Context, branch, commi
 
 func (d defaultGitWriter) commitAndPush(ctx context.Context, commitMessage string) error {
 	_, err := d.gitClient.Commit(git.Commit{
-		Author:  git.Author{Name: clientName, Email: clientEmail},
+		Author:  git.Author{Name: ClientName, Email: ClientEmail},
 		Message: commitMessage,
 	})
 
