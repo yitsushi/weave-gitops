@@ -13,17 +13,21 @@ import (
 )
 
 const (
-	gitopsManifestDir = "gitops"
-	wegoManifestsDir  = "wego-app"
+	gitopsAppManifestDir     = "gitops/app"
+	gitopsRuntimeManifestDir = "gitops/runtime"
+	wegoManifestsDir         = "wego-app"
+	templateExtensionLen     = 4
 )
 
 var (
-	//go:embed crds/wego.weave.works_apps.yaml
+	//go:embed gitops/runtime/wego.weave.works_apps.yaml
 	AppCRD []byte
 	//go:embed wego-app/*
 	wegoAppTemplates embed.FS
-	//go:embed gitops/*
+	//go:embed gitops/app/*
 	gitopsAppTemplates embed.FS
+	//go:embed gitops/runtime/*
+	gitopsRuntimeTemplates embed.FS
 )
 
 type Params struct {
@@ -33,38 +37,58 @@ type Params struct {
 
 // GitopsManifests generates manifests for Weave GitOps's application and runtime
 func GitopsManifests(params Params) ([]repository.File, error) {
-	templates, err := fs.ReadDir(gitopsAppTemplates, gitopsManifestDir)
+	appFiles, err := getManifestFiles(gitopsAppTemplates, gitopsAppManifestDir, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read gitops app templates: %w", err)
+	}
+
+	runtimeFiles, err := getManifestFiles(gitopsRuntimeTemplates, gitopsRuntimeManifestDir, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read gitops runtime templates: %w", err)
+	}
+
+	return append(appFiles, runtimeFiles...), nil
+}
+
+func getManifestFiles(embedded embed.FS, dir string, params Params) ([]repository.File, error) {
+	templates, err := fs.ReadDir(embedded, dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading templates directory: %w", err)
 	}
 
-	var manifests []repository.File
+	var files []repository.File
 
 	for _, template := range templates {
 		tplName := template.Name()
+		filePath := filepath.Join(dir, tplName)
 
-		filePath := filepath.Join(gitopsManifestDir, tplName)
-		templateBytes, err := fs.ReadFile(gitopsAppTemplates, filePath)
+		data, err := fs.ReadFile(embedded, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed reading template %s: %w", tplName, err)
 		}
 
-		data, err := executeTemplate(tplName, string(templateBytes), params)
-		if err != nil {
-			return nil, fmt.Errorf("failed executing template: %s: %w", tplName, err)
+		var file repository.File
+		if !strings.HasSuffix(filePath, ".tpl") {
+			file = repository.File{
+				Path: filePath,
+				Data: data,
+			}
+		} else {
+			manifest, err := executeTemplate(tplName, string(data), params)
+			if err != nil {
+				return nil, fmt.Errorf("failed executing template: %s: %w", tplName, err)
+			}
+
+			file = repository.File{
+				Path: filePath[:len(filePath)-templateExtensionLen],
+				Data: manifest,
+			}
 		}
 
-		if strings.HasSuffix(filePath, ".tpl") {
-
-		}
-
-		manifests = append(manifests, repository.File{
-			Path: filePath,
-			Data: data,
-		})
+		files = append(files, file)
 	}
 
-	return manifests, nil
+	return files, nil
 }
 
 // GenerateManifests generates weave-gitops manifests from a template
