@@ -10,18 +10,18 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-type Adder interface {
-	Add(repo *git.Repository, msg string, files []File) (string, error)
+type Committer interface {
+	Commit(repo *git.Repository, msg string, files []File) (string, error)
 }
 
-type gitAdder struct {
+type gitCommitter struct {
 }
 
-func NewAdder() Adder {
-	return &gitAdder{}
+func NewGitCommitter() Committer {
+	return &gitCommitter{}
 }
 
-func (g gitAdder) Add(repo *git.Repository, msg string, files []File) (string, error) {
+func (g gitCommitter) Commit(repo *git.Repository, msg string, files []File) (string, error) {
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return "", fmt.Errorf("unable to get worktree from repo: %w", err)

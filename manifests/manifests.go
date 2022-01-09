@@ -36,13 +36,13 @@ type Params struct {
 }
 
 // GitopsManifests generates manifests for Weave GitOps's application and runtime
-func GitopsManifests(params Params) ([]repository.File, error) {
-	appFiles, err := getManifestFiles(gitopsAppTemplates, gitopsAppManifestDir, params)
+func GitopsManifests(pathPrefix string, params Params) ([]repository.File, error) {
+	appFiles, err := getManifestFiles(pathPrefix, gitopsAppTemplates, gitopsAppManifestDir, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read gitops app templates: %w", err)
 	}
 
-	runtimeFiles, err := getManifestFiles(gitopsRuntimeTemplates, gitopsRuntimeManifestDir, params)
+	runtimeFiles, err := getManifestFiles(pathPrefix, gitopsRuntimeTemplates, gitopsRuntimeManifestDir, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read gitops runtime templates: %w", err)
 	}
@@ -50,7 +50,7 @@ func GitopsManifests(params Params) ([]repository.File, error) {
 	return append(appFiles, runtimeFiles...), nil
 }
 
-func getManifestFiles(embedded embed.FS, dir string, params Params) ([]repository.File, error) {
+func getManifestFiles(pathPrefix string, embedded embed.FS, dir string, params Params) ([]repository.File, error) {
 	templates, err := fs.ReadDir(embedded, dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading templates directory: %w", err)
@@ -70,7 +70,7 @@ func getManifestFiles(embedded embed.FS, dir string, params Params) ([]repositor
 		var file repository.File
 		if !strings.HasSuffix(filePath, ".tpl") {
 			file = repository.File{
-				Path: filePath,
+				Path: filepath.Join(pathPrefix, filePath),
 				Data: data,
 			}
 		} else {
@@ -80,7 +80,7 @@ func getManifestFiles(embedded embed.FS, dir string, params Params) ([]repositor
 			}
 
 			file = repository.File{
-				Path: filePath[:len(filePath)-templateExtensionLen],
+				Path: filepath.Join(pathPrefix, filePath[:len(filePath)-templateExtensionLen]),
 				Data: manifest,
 			}
 		}

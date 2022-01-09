@@ -11,14 +11,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/cmd/internal"
-	"github.com/weaveworks/weave-gitops/core/gitops/types"
+	"github.com/weaveworks/weave-gitops/core/gitops/install"
 	"github.com/weaveworks/weave-gitops/core/repository"
-	"github.com/weaveworks/weave-gitops/manifests"
 )
 
 type params struct {
-	DryRun     bool
-	ConfigRepo string
+	FluxPath []string
 }
 
 var (
@@ -43,12 +41,11 @@ be an initialized git repository and have Flux installed.`,
 
 func init() {
 	Cmd.AddCommand(installCmd)
-	installCmd.Flags().BoolVar(&installParams.DryRun, "dry-run", false, "Outputs all the manifests that would be installed")
-	installCmd.Flags().StringVar(&installParams.ConfigRepo, "config-repo", "", "URL of external repository that will hold automation manifests")
-	//cobra.CheckErr(installCmd.MarkFlagRequired("config-repo"))
+	installCmd.Flags().StringSliceVar(&installParams.FluxPath, "flux-paths", []string{}, "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
+	//cobra.CheckErr(installCmd.MarkFlagRequired("flux-paths"))
 }
 
-func installRunCmd(cmd *cobra.Command, args []string) error {
+func installRunCmd(_ *cobra.Command, _ []string) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to determine local directory: %w", err)
@@ -59,21 +56,12 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	files, err := manifests.GitopsManifests(manifests.Params{
-		AppVersion: "test",
-		Namespace:  types.FluxNamespace,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to produce manifest files for Weave Gitops: %w", err)
-	}
+	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter())
 
-	adder := repository.NewAdder()
-	_, err = adder.Add(repo, "new commit", files)
+	err = gitopsInstaller.Install(repo)
 	if err != nil {
-		return fmt.Errorf("there was an issue creating a commit: %w", err)
+		fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
 	}
-
-	//fmt.Printf("%s\n", branch)
 
 	return nil
 }

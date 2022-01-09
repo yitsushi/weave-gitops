@@ -3,7 +3,7 @@ package types
 import "errors"
 
 const (
-	baseDir       = ".weave-gitops"
+	BaseDir       = ".weave-gitops"
 	FluxNamespace = "wego-system"
 )
 

@@ -23,26 +23,26 @@ func setUpAppTest(t *testing.T) appFixture {
 func TestAppNameFromPath_NotAnAppPath(t *testing.T) {
 	f := setUpAppTest(t)
 
-	appName := appNameFromPath(baseDir)
+	appName := appNameFromPath(BaseDir)
 	f.Expect(appName).To(Equal(""))
 
-	appName = appNameFromPath(baseDir + "/apps_r_us/my-app/test.yaml")
+	appName = appNameFromPath(BaseDir + "/apps_r_us/my-app/test.yaml")
 	f.Expect(appName).To(Equal(""), "app name should be an empty string with an invalid path")
 }
 
 func TestAppNameFromPath_AnAppPathNoAppSubdirectory(t *testing.T) {
 	f := setUpAppTest(t)
-	appName := appNameFromPath(baseDir + "/apps")
+	appName := appNameFromPath(BaseDir + "/apps")
 
 	f.Expect(appName).To(Equal(""))
 }
 
 func TestAppNameFromPath_ValidPaths(t *testing.T) {
 	f := setUpAppTest(t)
-	appName := appNameFromPath(baseDir + "/apps/my-app-1")
+	appName := appNameFromPath(BaseDir + "/apps/my-app-1")
 	f.Expect(appName).To(Equal("my-app-1"))
 
-	appName = appNameFromPath(baseDir + "/apps/my-app-2/test.yaml")
+	appName = appNameFromPath(BaseDir + "/apps/my-app-2/test.yaml")
 	f.Expect(appName).To(Equal("my-app-2"))
 }
 

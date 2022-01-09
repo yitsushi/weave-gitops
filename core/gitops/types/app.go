@@ -26,11 +26,11 @@ const (
 )
 
 var (
-	appPathPrefix = fmt.Sprintf("%s/apps/", baseDir)
+	appPathPrefix = fmt.Sprintf("%s/apps/", BaseDir)
 )
 
 func appPath(name, fileName string) string {
-	return fmt.Sprintf("%s/apps/%s/%s", baseDir, name, fileName)
+	return fmt.Sprintf("%s/apps/%s/%s", BaseDir, name, fileName)
 }
 
 func currentPath(fileName string) string {
@@ -141,7 +141,7 @@ func (a App) Files() ([]repository.File, error) {
 
 	kustomization := a.Kustomization()
 	kustomization.Resources = kustomizeResources
-	
+
 	kustomizeData, err := yaml.Marshal(kustomization)
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
