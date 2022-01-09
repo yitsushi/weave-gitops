@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"text/template"
+
+	"github.com/weaveworks/weave-gitops/core/repository"
 )
 
 const (
-	wegoManifestsDir = "wego-app"
+	gitopsManifestDir = "gitops"
+	wegoManifestsDir  = "wego-app"
 )
 
 var (
@@ -18,11 +22,49 @@ var (
 	AppCRD []byte
 	//go:embed wego-app/*
 	wegoAppTemplates embed.FS
+	//go:embed gitops/*
+	gitopsAppTemplates embed.FS
 )
 
 type Params struct {
 	AppVersion string
 	Namespace  string
+}
+
+// GitopsManifests generates manifests for Weave GitOps's application and runtime
+func GitopsManifests(params Params) ([]repository.File, error) {
+	templates, err := fs.ReadDir(gitopsAppTemplates, gitopsManifestDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading templates directory: %w", err)
+	}
+
+	var manifests []repository.File
+
+	for _, template := range templates {
+		tplName := template.Name()
+
+		filePath := filepath.Join(gitopsManifestDir, tplName)
+		templateBytes, err := fs.ReadFile(gitopsAppTemplates, filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed reading template %s: %w", tplName, err)
+		}
+
+		data, err := executeTemplate(tplName, string(templateBytes), params)
+		if err != nil {
+			return nil, fmt.Errorf("failed executing template: %s: %w", tplName, err)
+		}
+
+		if strings.HasSuffix(filePath, ".tpl") {
+
+		}
+
+		manifests = append(manifests, repository.File{
+			Path: filePath,
+			Data: data,
+		})
+	}
+
+	return manifests, nil
 }
 
 // GenerateManifests generates weave-gitops manifests from a template

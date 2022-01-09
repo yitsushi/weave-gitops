@@ -11,7 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/cmd/internal"
+	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
+	"github.com/weaveworks/weave-gitops/manifests"
 )
 
 type params struct {
@@ -57,23 +59,19 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	files := []repository.File{
-		{
-			Path: "example-git-file-2.txt",
-			Data: []byte("hello world!"),
-		},
-		{
-			Path: "example-git-file-3.txt",
-			Data: []byte("hello world!"),
-		},
-		{
-			Path: "example-git-file-4.txt",
-			Data: []byte("hello world!"),
-		},
+	files, err := manifests.GitopsManifests(manifests.Params{
+		AppVersion: "test",
+		Namespace:  types.FluxNamespace,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to produce manifest files for Weave Gitops: %w", err)
 	}
 
 	adder := repository.NewAdder()
-	adder.Add(repo, "new commit", files)
+	_, err = adder.Add(repo, "new commit", files)
+	if err != nil {
+		return fmt.Errorf("there was an issue creating a commit: %w", err)
+	}
 
 	//fmt.Printf("%s\n", branch)
 
