@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/weaveworks/weave-gitops/core/repository"
@@ -22,7 +23,7 @@ func GitRepository(dir string) (*git.Repository, error) {
 func ReadDir(dir string) ([]repository.File, error) {
 	fileInfo, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("could not find dir %s, are you sure you put the correct path: %w", dir, err)
 	}
 
 	var files []repository.File
@@ -31,13 +32,14 @@ func ReadDir(dir string) ([]repository.File, error) {
 			continue
 		}
 
-		data, readErr := ioutil.ReadFile(fi.Name())
+		path := filepath.Join(dir, fi.Name())
+		data, readErr := ioutil.ReadFile(path)
 		if readErr != nil {
 			return nil, fmt.Errorf("error reading file: %s", fi.Name())
 		}
 
 		files = append(files, repository.File{
-			Path: fi.Name(),
+			Path: path,
 			Data: data,
 		})
 	}

@@ -11,13 +11,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/cmd/internal"
-	"github.com/weaveworks/weave-gitops/core/gitops/install"
-	"github.com/weaveworks/weave-gitops/core/repository"
 )
 
 type params struct {
-	FluxPath []string
+	FluxPath string
 }
+
+const (
+	fluxPaths = "flux-paths"
+)
 
 var (
 	installParams params
@@ -41,27 +43,32 @@ be an initialized git repository and have Flux installed.`,
 
 func init() {
 	Cmd.AddCommand(installCmd)
-	installCmd.Flags().StringSliceVar(&installParams.FluxPath, "flux-paths", []string{}, "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
+	installCmd.Flags().StringVar(&installParams.FluxPath, fluxPaths, "", "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
 	//cobra.CheckErr(installCmd.MarkFlagRequired("flux-paths"))
 }
 
-func installRunCmd(_ *cobra.Command, _ []string) error {
+func installRunCmd(cmd *cobra.Command, args []string) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("unable to determine local directory: %w", err)
 	}
 
-	repo, err := internal.GitRepository(dir)
+	_, err = internal.GitRepository(dir)
 	if err != nil {
 		return err
 	}
 
-	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter())
-
-	err = gitopsInstaller.Install(repo)
+	_, err = internal.ReadDir(installParams.FluxPath)
 	if err != nil {
-		fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
+		return err
 	}
+
+	//gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter())
+	//
+	//err = gitopsInstaller.Install(repo)
+	//if err != nil {
+	//	fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
+	//}
 
 	return nil
 }
