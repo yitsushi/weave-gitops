@@ -234,7 +234,7 @@ var _ = Describe("Uninstall", func() {
 			Expect(kubeClient.DeleteCallCount()).To(Equal(0))
 		})
 	})
-	FDescribe("Actual Uninstall tests", func() {
+	XDescribe("Actual Uninstall tests", func() {
 		var (
 			gOps        gitops.GitopsService
 			gitServer   *gittestserver.GitServer

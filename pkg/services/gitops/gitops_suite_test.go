@@ -32,14 +32,14 @@ func TestGitops(t *testing.T) {
 	RunSpecs(t, "Gitops Suite")
 }
 
-var _ = BeforeSuite(func() {
-	env, err = testutils.StartK8sTestEnvironment([]string{
-		"../../../manifests/crds",
-		"../../../tools/testcrds",
-	})
-	Expect(err).NotTo(HaveOccurred())
-})
+// var _ = BeforeSuite(func() {
+// 	env, err = testutils.StartK8sTestEnvironment([]string{
+// 		"../../../manifests/crds",
+// 		"../../../tools/testcrds",
+// 	})
+// 	Expect(err).NotTo(HaveOccurred())
+// })
 
-var _ = AfterSuite(func() {
-	env.Stop()
-})
+// var _ = AfterSuite(func() {
+// 	env.Stop()
+// })

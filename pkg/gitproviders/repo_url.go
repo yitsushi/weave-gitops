@@ -61,6 +61,27 @@ func NewRepoURL(uri string) (RepoURL, error) {
 	}, nil
 }
 
+func NewTestRepoURL(uri string, providerName GitProviderName) (RepoURL, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return RepoURL{}, fmt.Errorf("could not create normalized repo URL %s: %w", uri, err)
+	}
+
+	protocol := RepositoryURLProtocolSSH
+	if u.Scheme == "https" {
+		protocol = RepositoryURLProtocolHTTPS
+	}
+
+	return RepoURL{
+		repoName:   utils.UrlToRepoName(uri),
+		owner:      "",
+		url:        u,
+		normalized: uri,
+		provider:   providerName,
+		protocol:   protocol,
+	}, nil
+}
+
 func (n RepoURL) String() string {
 	return n.normalized
 }
