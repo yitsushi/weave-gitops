@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/version"
 	"github.com/weaveworks/weave-gitops/cmd/internal"
+	"github.com/weaveworks/weave-gitops/core/gitops/install"
+	"github.com/weaveworks/weave-gitops/core/repository"
 )
 
 type params struct {
@@ -53,22 +55,22 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unable to determine local directory: %w", err)
 	}
 
-	_, err = internal.GitRepository(dir)
+	repo, err := internal.GitRepository(dir)
 	if err != nil {
 		return err
 	}
 
-	_, err = internal.ReadDir(installParams.FluxPath)
+	toolkitFiles, err := internal.ReadDir(installParams.FluxPath)
 	if err != nil {
 		return err
 	}
 
-	//gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter())
-	//
-	//err = gitopsInstaller.Install(repo)
-	//if err != nil {
-	//	fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
-	//}
+	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter(), "test")
+
+	err = gitopsInstaller.Install(repo, toolkitFiles)
+	if err != nil {
+		fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
+	}
 
 	return nil
 }

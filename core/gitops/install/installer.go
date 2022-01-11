@@ -10,27 +10,42 @@ import (
 )
 
 type Installer interface {
-	Install(repo *git.Repository) error
+	Install(repo *git.Repository, toolkitFiles []repository.File) error
 }
 
 type gitopsInstall struct {
+	appVersion   string
 	committerSvc repository.Committer
 }
 
-func NewGitopsInstaller(adder repository.Committer) Installer {
+func NewGitopsInstaller(adder repository.Committer, version string) Installer {
 	return &gitopsInstall{
+		appVersion:   version,
 		committerSvc: adder,
 	}
 }
 
-func (gi gitopsInstall) Install(repo *git.Repository) error {
-	files, err := manifests.GitopsManifests(types.BaseDir, manifests.Params{
-		AppVersion: "test",
-		Namespace:  types.FluxNamespace,
+func (gi gitopsInstall) Install(repo *git.Repository, toolkitFiles []repository.File) error {
+
+	toolkit, err := types.NewGitopsToolkit(toolkitFiles)
+	if err != nil {
+		return fmt.Errorf("unable to create gitops toolkit: %w", err)
+	}
+
+	files, err := manifests.GitopsManifests(toolkit.SystemPath, manifests.Params{
+		AppVersion: gi.appVersion,
+		Namespace:  toolkit.Namespace(),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to produce manifest files for Weave Gitops: %w", err)
 	}
+
+	systemFiles, err := toolkit.Files()
+	if err != nil {
+		return fmt.Errorf("unable to create system files for Weave Gitops: %w", err)
+	}
+
+	files = append(files, systemFiles...)
 
 	_, err = gi.committerSvc.Commit(repo, "Installed Weave GitOps", files)
 	if err != nil {
