@@ -9,7 +9,7 @@ require (
 	github.com/fluxcd/helm-controller/api v0.11.2
 	github.com/fluxcd/kustomize-controller/api v0.16.0
 	github.com/fluxcd/pkg/apis/meta v0.10.1
-	github.com/fluxcd/pkg/runtime v0.12.1 // indirect
+	github.com/fluxcd/pkg/runtime v0.12.1
 	github.com/fluxcd/pkg/ssa v0.2.0
 	github.com/fluxcd/source-controller v0.15.4
 	github.com/fluxcd/source-controller/api v0.15.4
@@ -70,9 +70,8 @@ require (
 )
 
 require (
-	github.com/fluxcd/notification-controller/api v0.19.0
 	github.com/gin-gonic/gin v1.7.7
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	github.com/mitchellh/mapstructure v1.4.2
 )
 
 require (
@@ -171,7 +170,6 @@ require (
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
@@ -216,6 +214,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect

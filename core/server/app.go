@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
@@ -88,7 +89,7 @@ func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddApp
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {
 	dir, err := a.repoManager.GetTempDir("test")
 	if err == repository.ErrBranchDoesNotExist {
-		return nil, status.Errorf(codes.NotFound, "branch does not exist")
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("branch %q does not exist", "test"))
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get temp dir")
 	}

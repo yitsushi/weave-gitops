@@ -9,21 +9,29 @@ type Props = {
   innerRef?: any;
   children?: any;
   href?: any;
+  onClick?: (ev: any) => void;
 };
 
-function Link({ children, href, className, to = "", ...props }: Props) {
+function Link({
+  children,
+  href,
+  onClick,
+  className,
+  to = "",
+  ...props
+}: Props) {
   const txt = <Text color="primary">{children}</Text>;
 
   if (href) {
     return (
-      <a className={className} href={href}>
+      <a onClick={onClick} className={className} href={href}>
         {txt}
       </a>
     );
   }
 
   return (
-    <RouterLink className={className} to={to} {...props}>
+    <RouterLink onClick={onClick} className={className} to={to} {...props}>
       {txt}
     </RouterLink>
   );

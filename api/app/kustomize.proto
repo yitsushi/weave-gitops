@@ -85,7 +85,6 @@ service AppKustomization {
   rpc Remove(RemoveKustomizationRequest) returns (RemoveKustomizationResponse) {
     option (google.api.http) = {
       delete : "/v1/repo/{repo_name}/app/{app_name}/kustomization/{kustomization_name}"
-      body: "*"
     };
   }
 }

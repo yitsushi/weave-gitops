@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/source-controller/api/v1beta1"
@@ -92,6 +93,7 @@ func (ks *kustServer) Add(ctx context.Context, msg *pb.AddKustomizationRequest) 
 		Kustomization: protoToKustomization(msg),
 	})
 	if err == types.ErrNotFound {
+		fmt.Println("hitting not found")
 		return nil, status.Error(codes.NotFound, "resource does not exist")
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to create kustomization: %w", err)

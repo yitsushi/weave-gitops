@@ -3,34 +3,40 @@ import _ from "lodash";
 import React from "react";
 import styled from "styled-components";
 import useCommon from "../hooks/common";
-import { PageRoute } from "../lib/types";
+import { PageRoute, RequestError } from "../lib/types";
 import { formatURL } from "../lib/utils";
 import Alert from "./Alert";
 import Flex from "./Flex";
 import Footer from "./Footer";
 import Link from "./Link";
 import LoadingPage from "./LoadingPage";
+import Spacer from "./Spacer";
 
 export type PageProps = {
   className?: string;
   children?: any;
   title?: string;
   breadcrumbs?: { page: PageRoute; query?: any }[];
-  topRight?: JSX.Element;
+  actions?: JSX.Element;
   loading?: boolean;
+  error?: RequestError;
 };
 
 const Content = styled.div`
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  min-width: 1260px;
+  min-height: 762px;
   box-sizing: border-box;
-  background-color: ${(props) => props.theme.colors.white};
+  background-color: rgba(255, 255, 255, 0.75);
   padding-left: ${(props) => props.theme.spacing.large};
   padding-right: ${(props) => props.theme.spacing.large};
   padding-top: ${(props) => props.theme.spacing.large};
   padding-bottom: ${(props) => props.theme.spacing.medium};
 `;
+
+const Children = styled.div``;
 
 export const TitleBar = styled.div`
   display: flex;
@@ -59,10 +65,11 @@ function Page({
   children,
   title,
   breadcrumbs,
-  topRight,
+  actions,
   loading,
+  error,
 }: PageProps) {
-  const { appState, settings } = useCommon();
+  const { settings } = useCommon();
 
   if (loading) {
     return (
@@ -85,18 +92,15 @@ function Page({
               ))}
             <h2>{title}</h2>
           </Breadcrumbs>
-          {topRight}
+          {actions}
         </TitleBar>
-        {appState.error && (
+        {error && (
           <Flex center wide>
-            <Alert
-              title={appState.error.message}
-              message={appState.error.detail}
-              severity="error"
-            />
+            <Alert title="Error" message={error.message} severity="error" />
           </Flex>
         )}
-        <div>{children}</div>
+        <Spacer m={["small"]} />
+        <Children>{children}</Children>
       </Content>
       {settings.renderFooter && <Footer />}
     </div>
@@ -104,7 +108,7 @@ function Page({
 }
 
 export default styled(Page)`
-  /* display: flex; */
+  min-height: 1216px;
 
   .MuiAlert-root {
     width: 100%;

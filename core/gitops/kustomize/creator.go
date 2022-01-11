@@ -39,7 +39,7 @@ func (a kustomizeCreator) Create(ctx context.Context, repo *git.Repository, auth
 	if err == types.ErrNotFound {
 		return v1beta2.Kustomization{}, err
 	} else if err != nil {
-		return v1beta2.Kustomization{}, fmt.Errorf("kustServer.Add: %w")
+		return v1beta2.Kustomization{}, fmt.Errorf("kustServer.Add: %w", err)
 	}
 
 	files, err := app.Files()

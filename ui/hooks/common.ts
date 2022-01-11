@@ -62,3 +62,9 @@ export function useDebounce<T>(value: T, delay: number) {
 
   return debouncedValue;
 }
+
+export function useUserConfigRepoName() {
+  const { userConfigRepoName } = useContext(AppContext);
+
+  return userConfigRepoName;
+}

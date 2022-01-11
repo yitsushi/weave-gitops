@@ -61,6 +61,6 @@ export class AppKustomization {
     return fm.fetchReq<AddKustomizationRequest, AddKustomizationResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}/kustomization`, {...initReq, method: "POST", body: JSON.stringify(req)})
   }
   static Remove(req: RemoveKustomizationRequest, initReq?: fm.InitReq): Promise<RemoveKustomizationResponse> {
-    return fm.fetchReq<RemoveKustomizationRequest, RemoveKustomizationResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}/kustomization/${req["kustomizationName"]}`, {...initReq, method: "DELETE", body: JSON.stringify(req)})
+    return fm.fetchReq<RemoveKustomizationRequest, RemoveKustomizationResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}/kustomization/${req["kustomizationName"]}`, {...initReq, method: "DELETE"})
   }
 }

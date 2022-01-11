@@ -10,6 +10,9 @@ export type App = {
   description?: string
   displayName?: string
   id?: string
+  kustomizations?: string[]
+  helmReleases?: string[]
+  sources?: string[]
 }
 
 export type AddAppRequest = {

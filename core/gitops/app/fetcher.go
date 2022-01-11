@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -30,7 +31,11 @@ type appSourceFetcher struct {
 func (af appSourceFetcher) Get(ctx context.Context, appName, repoName, namespace string) (types.App, error) {
 	apps, err := af.getApps(ctx, repoName, namespace)
 	if err != nil {
-		return types.App{}, fmt.Errorf("appSourceFetcher.Get could not get apps: %w", err)
+		if errors.Is(err, source.ErrNotFound) {
+			return types.App{}, types.ErrNotFound
+		}
+
+		return types.App{}, fmt.Errorf("appFetcher.Get could not get apps: %w", err)
 	}
 
 	if app, ok := apps[appName]; !ok {

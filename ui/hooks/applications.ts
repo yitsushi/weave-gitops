@@ -15,9 +15,9 @@ import {
   RemoveApplicationRequest,
   RemoveApplicationResponse,
 } from "../lib/api/applications/applications.pb";
+import { WeGONamespace } from "../lib/types";
 import { RequestStateWithToken, useRequestState } from "./common";
 
-const WeGONamespace = "wego-system";
 const providerTokenHeaderName = "Git-Provider-Token";
 
 export function useParseRepoURL(url: string) {

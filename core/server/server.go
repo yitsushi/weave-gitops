@@ -18,7 +18,12 @@ import (
 )
 
 func Hydrate(ctx context.Context, mux *runtime.ServeMux) error {
-	k8sClient, err := kube.NewClient()
+	cfg, ctxName, err := kube.RestConfig()
+	if err != nil {
+		return fmt.Errorf("kube.RestConfig: %w", err)
+	}
+
+	_, k8sClient, err := kube.NewKubeHTTPClientWithConfig(cfg, ctxName)
 	if err != nil {
 		return err
 	}

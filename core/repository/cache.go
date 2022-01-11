@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	localCache map[string]localRepo
+	localCache = make(map[string]localRepo)
 
 	ErrBranchDoesNotExist = errors.New("branch does not exist")
 )
@@ -60,6 +60,7 @@ func (rm *repoManager) Get(ctx context.Context, auth transport.AuthMethod, sourc
 		Depth:         0,
 		Tags:          git.NoTags,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed cloning repo: %s: %w", sourceUrl, err)
 	}
@@ -67,6 +68,7 @@ func (rm *repoManager) Get(ctx context.Context, auth transport.AuthMethod, sourc
 	// TODO: the temp dir is never removed
 	rm.cacheMutex.Lock()
 	defer rm.cacheMutex.Unlock()
+
 	localCache[branch] = localRepo{
 		dir:  repoDir,
 		repo: repo,
