@@ -1,29 +1,29 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type Creator interface {
-	Create(name, namespace, description, branch string) (types.App, error)
+	Create(repo *git.Repository, name, namespace, description string) (types.App, error)
 }
 
-func NewCreator(gitService repository.GitWriter) Creator {
+func NewCreator(committerSvc repository.Committer) Creator {
 	return &appCreator{
-		gitService: gitService,
+		committerSvc: committerSvc,
 	}
 }
 
 type appCreator struct {
-	gitService repository.GitWriter
+	committerSvc repository.Committer
 }
 
-func (a appCreator) Create(name, namespace, description, branch string) (types.App, error) {
+func (a appCreator) Create(repo *git.Repository, name, namespace, description string) (types.App, error) {
 	app := types.App{
 		Id:          string(uuid.NewUUID()),
 		Name:        name,
@@ -37,7 +37,8 @@ func (a appCreator) Create(name, namespace, description, branch string) (types.A
 	}
 
 	commitMessage := fmt.Sprintf("Created new app: %s", app.Name)
-	err = a.gitService.AddCommitAndPush(context.Background(), branch, commitMessage, files)
+
+	_, err = a.committerSvc.Commit(repo, commitMessage, files)
 	if err != nil {
 		return types.App{}, fmt.Errorf("git writer failed for app: %w", err)
 	}

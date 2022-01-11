@@ -6,7 +6,6 @@ import (
 
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
-	"github.com/weaveworks/weave-gitops/core/repository"
 	"github.com/weaveworks/weave-gitops/core/source"
 	pb "github.com/weaveworks/weave-gitops/pkg/api/app"
 	"google.golang.org/grpc/codes"
@@ -36,25 +35,26 @@ func NewAppServer(fetcher app.Fetcher, sourceSvc source.Service) pb.AppsServer {
 }
 
 func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddAppResponse, error) {
-	repo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
-	}
+	//repo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
+	//if err != nil {
+	//	return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
+	//}
+	//
+	//gitClient, err := a.sourceSvc.GitClient(context.Background(), types.FluxNamespace, repo)
+	//if err != nil {
+	//	return nil, status.Errorf(codes.Internal, "unable to get git client: %s", err.Error())
+	//}
+	//
+	//gitSvc := repository.NewGitWriter(gitClient, repo)
+	//appSvc := app.NewCreator(gitSvc)
+	//
+	//app, err := appSvc.Create(msg.Name, types.FluxNamespace, msg.DisplayName, "delta")
+	//if err != nil {
+	//	return nil, status.Errorf(codes.Internal, "unable to create new app: %s", err.Error())
+	//}
 
-	gitClient, err := a.sourceSvc.GitClient(context.Background(), types.FluxNamespace, repo)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get git client: %s", err.Error())
-	}
-
-	gitSvc := repository.NewGitWriter(gitClient, repo)
-	appSvc := app.NewCreator(gitSvc)
-
-	app, err := appSvc.Create(msg.Name, types.FluxNamespace, msg.DisplayName, "delta")
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to create new app: %s", err.Error())
-	}
-
-	return &pb.AddAppResponse{App: newProtoApp(app)}, nil
+	//return &pb.AddAppResponse{App: newProtoApp(app)}, nil
+	return nil, errors.New("not implemented")
 }
 
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {

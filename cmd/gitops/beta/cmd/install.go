@@ -16,7 +16,7 @@ import (
 )
 
 type params struct {
-	FluxPath string
+	FluxPaths []string
 }
 
 const (
@@ -45,8 +45,8 @@ be an initialized git repository and have Flux installed.`,
 
 func init() {
 	Cmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installParams.FluxPath, fluxPaths, "", "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
-	//cobra.CheckErr(installCmd.MarkFlagRequired("flux-paths"))
+	installCmd.Flags().StringSliceVar(&installParams.FluxPaths, fluxPaths, []string{}, "List of flux's gitops toolkit paths to install Weave GitOps.  E.g. ./dev-cluster/flux-system,./staging-cluster/flux-system")
+	cobra.CheckErr(installCmd.MarkFlagRequired("flux-paths"))
 }
 
 func installRunCmd(cmd *cobra.Command, args []string) error {
@@ -60,7 +60,7 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	toolkitFiles, err := internal.ReadDir(installParams.FluxPath)
+	toolkitFiles, err := internal.ReadDir(installParams.FluxPaths)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 
 	err = gitopsInstaller.Install(repo, toolkitFiles)
 	if err != nil {
-		fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
+		return fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
 	}
 
 	return nil

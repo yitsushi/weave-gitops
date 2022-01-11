@@ -10,7 +10,7 @@ import (
 )
 
 type Installer interface {
-	Install(repo *git.Repository, toolkitFiles []repository.File) error
+	Install(repo *git.Repository, toolkitFiles [][]repository.File) error
 }
 
 type gitopsInstall struct {
@@ -25,31 +25,33 @@ func NewGitopsInstaller(adder repository.Committer, version string) Installer {
 	}
 }
 
-func (gi gitopsInstall) Install(repo *git.Repository, toolkitFiles []repository.File) error {
+func (gi gitopsInstall) Install(repo *git.Repository, toolkitFiles [][]repository.File) error {
 
-	toolkit, err := types.NewGitopsToolkit(toolkitFiles)
-	if err != nil {
-		return fmt.Errorf("unable to create gitops toolkit: %w", err)
-	}
+	for _, tkf := range toolkitFiles {
+		toolkit, err := types.NewGitopsToolkit(tkf)
+		if err != nil {
+			return fmt.Errorf("unable to create gitops toolkit: %w", err)
+		}
 
-	files, err := manifests.GitopsManifests(toolkit.SystemPath, manifests.Params{
-		AppVersion: gi.appVersion,
-		Namespace:  toolkit.Namespace(),
-	})
-	if err != nil {
-		return fmt.Errorf("unable to produce manifest files for Weave Gitops: %w", err)
-	}
+		files, err := manifests.GitopsManifests(toolkit.SystemPath, manifests.Params{
+			AppVersion: gi.appVersion,
+			Namespace:  toolkit.Namespace(),
+		})
+		if err != nil {
+			return fmt.Errorf("unable to produce manifest files for Weave Gitops: %w", err)
+		}
 
-	systemFiles, err := toolkit.Files()
-	if err != nil {
-		return fmt.Errorf("unable to create system files for Weave Gitops: %w", err)
-	}
+		systemFiles, err := toolkit.Files()
+		if err != nil {
+			return fmt.Errorf("unable to create system files for Weave Gitops: %w", err)
+		}
 
-	files = append(files, systemFiles...)
+		files = append(files, systemFiles...)
 
-	_, err = gi.committerSvc.Commit(repo, "Installed Weave GitOps", files)
-	if err != nil {
-		return fmt.Errorf("there was an issue creating a commit: %w", err)
+		_, err = gi.committerSvc.Commit(repo, fmt.Sprintf("Installed Weave GitOps in %s", toolkit.ClusterName), files)
+		if err != nil {
+			return fmt.Errorf("there was an issue creating a commit: %w", err)
+		}
 	}
 
 	return nil

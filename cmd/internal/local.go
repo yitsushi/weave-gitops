@@ -20,29 +20,37 @@ func GitRepository(dir string) (*git.Repository, error) {
 	return repo, nil
 }
 
-func ReadDir(dir string) ([]repository.File, error) {
-	fileInfo, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("could not find dir %s, are you sure you put the correct path: %w", dir, err)
-	}
+func ReadDir(directories []string) ([][]repository.File, error) {
+	var toolkitFiles [][]repository.File
 
-	var files []repository.File
-	for _, fi := range fileInfo {
-		if fi.IsDir() {
-			continue
+	for _, dir := range directories {
+		fileInfo, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return nil, fmt.Errorf("could not find dir %s, are you sure you put the correct path: %w", dir, err)
 		}
 
-		path := filepath.Join(dir, fi.Name())
-		data, readErr := ioutil.ReadFile(path)
-		if readErr != nil {
-			return nil, fmt.Errorf("error reading file: %s", fi.Name())
+		var files []repository.File
+
+		for _, fi := range fileInfo {
+			if fi.IsDir() {
+				continue
+			}
+
+			path := filepath.Join(dir, fi.Name())
+
+			data, readErr := ioutil.ReadFile(path)
+			if readErr != nil {
+				return nil, fmt.Errorf("error reading file: %s", fi.Name())
+			}
+
+			files = append(files, repository.File{
+				Path: path,
+				Data: data,
+			})
 		}
 
-		files = append(files, repository.File{
-			Path: path,
-			Data: data,
-		})
+		toolkitFiles = append(toolkitFiles, files)
 	}
 
-	return files, nil
+	return toolkitFiles, nil
 }

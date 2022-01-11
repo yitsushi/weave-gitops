@@ -20,39 +20,39 @@ type appRequest struct {
 }
 
 func createApp(c *gin.Context) {
-	var b appRequest
-
-	err := c.BindJSON(&b)
-	if err != nil {
-		c.String(http.StatusBadRequest, "%s", err)
-	}
-
-	_, client, err := kube.NewKubeHTTPClient()
-	if err != nil {
-		_ = c.Error(err)
-	}
-
-	repoSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
-
-	repo, err := repoSvc.Get(context.Background(), c.Param("name"), types.FluxNamespace)
-	if err != nil {
-		_ = c.Error(err)
-	}
-
-	gitClient, err := repoSvc.GitClient(context.Background(), types.FluxNamespace, repo)
-	if err != nil {
-		_ = c.Error(err)
-	}
-
-	gitSvc := repository.NewGitWriter(gitClient, repo)
-	appSvc := app.NewCreator(gitSvc)
-
-	app, err := appSvc.Create(b.Name, b.Namespace, b.Description, "delta")
-	if err != nil {
-		_ = c.Error(err)
-	}
-
-	c.JSON(http.StatusOK, app)
+	//var b appRequest
+	//
+	//err := c.BindJSON(&b)
+	//if err != nil {
+	//	c.String(http.StatusBadRequest, "%s", err)
+	//}
+	//
+	//_, client, err := kube.NewKubeHTTPClient()
+	//if err != nil {
+	//	_ = c.Error(err)
+	//}
+	//
+	//repoSvc := source.NewService(client, source.GitopsRuntimeExclusionList)
+	//
+	//repo, err := repoSvc.Get(context.Background(), c.Param("name"), types.FluxNamespace)
+	//if err != nil {
+	//	_ = c.Error(err)
+	//}
+	//
+	//gitClient, err := repoSvc.GitClient(context.Background(), types.FluxNamespace, repo)
+	//if err != nil {
+	//	_ = c.Error(err)
+	//}
+	//
+	//gitSvc := repository.NewGitWriter(gitClient, repo)
+	//appSvc := app.NewCreator(gitSvc)
+	//
+	//app, err := appSvc.Create(b.Name, b.Namespace, b.Description, "delta")
+	//if err != nil {
+	//	_ = c.Error(err)
+	//}
+	//
+	//c.JSON(http.StatusOK, app)
 }
 
 func deleteApp(c *gin.Context) {

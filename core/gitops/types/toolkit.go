@@ -83,6 +83,9 @@ func NewGitopsToolkit(files []repository.File) (GitopsToolkit, error) {
 		}
 	}
 
+	splitPath := strings.Split(toolkit.syncKustomization.Spec.Path, "/")
+
+	toolkit.ClusterName = splitPath[len(splitPath)-1]
 	toolkit.SystemPath = filepath.Join(toolkit.syncKustomization.Spec.Path, systemPath)
 	toolkit.Kustomization = types.Kustomization{
 		TypeMeta: types.TypeMeta{
