@@ -112,6 +112,7 @@ func (a *AutomationGen) GetSecretRefForPrivateGitSources(ctx context.Context, ur
 		return "", err
 	}
 
+	// This is (probably) used to control whether a secret is "empty" in the kustomization
 	if *visibility != gitprovider.RepositoryVisibilityPublic {
 		secretRef = CreateRepoSecretName(url)
 	}

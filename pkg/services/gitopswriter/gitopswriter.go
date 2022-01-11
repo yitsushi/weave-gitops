@@ -30,6 +30,7 @@ type GitOpsDirectoryWriter interface {
 	AddApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
 	RemoveApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
 	AssociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string, fluxNamespace string, autoMerge bool) error
+	DisassociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL) error
 }
 
 type gitOpsDirectoryWriterSvc struct {
@@ -257,6 +258,29 @@ func (dw *gitOpsDirectoryWriterSvc) AssociateCluster(
 		if err := dw.RepoWriter.CreatePullRequest(ctx, prInfo); err != nil {
 			return fmt.Errorf("failed creating pull request: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (dw *gitOpsDirectoryWriterSvc) DisassociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL) error {
+
+	defaultBranch, err := dw.RepoWriter.GetDefaultBranch(ctx)
+	if err != nil {
+		return err
+	}
+
+	remover, repoDir, err := dw.RepoWriter.CloneRepo(ctx, defaultBranch)
+	if err != nil {
+		return fmt.Errorf("failed to clone repo: %w", err)
+	}
+
+	defer remover()
+
+	// a := appPath()
+
+	if err := dw.RepoWriter.Remove(); err != nil {
+		return err
 	}
 
 	return nil

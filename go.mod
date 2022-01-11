@@ -238,13 +238,6 @@ require (
 	github.com/sosedoff/gitkit v0.2.1-0.20200818155723-72ebbcf5056d // indirect
 )
 
-require sigs.k8s.io/kustomize v2.0.3+incompatible
-
-require (
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
-	github.com/go-openapi/spec v0.19.5 // indirect
-)
-
 // fix CVE-2021-41103
 replace github.com/containerd/containerd => github.com/containerd/containerd v1.5.8
 

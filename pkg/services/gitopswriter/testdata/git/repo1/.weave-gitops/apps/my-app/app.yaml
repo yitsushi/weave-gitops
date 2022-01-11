@@ -1,0 +1,15 @@
+---
+apiVersion: wego.weave.works/v1alpha1
+kind: Application
+metadata:
+  labels:
+    wego.weave.works/app-identifier: wego-366c99eebf195301a3beed6b1b3b2d3a
+  name: my-app
+  namespace: wego-system
+spec:
+  branch: main
+  config_url: ssh://git@github.com/jpellizzari/wego-config-repo.git
+  deployment_type: kustomize
+  path: ./
+  source_type: git
+  url: ssh://git@github.com/jpellizzari/stringly.git
