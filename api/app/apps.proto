@@ -6,17 +6,17 @@ option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
 
 import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
+//import "protoc-gen-openapiv2/options/annotations.proto";
 
-option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-  info: {
-    title: "Weave GitOps Application API",
-    version: "0.1";
-    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications";
-  };
-  consumes: "apps/json";
-  produces: "apps/json";
-};
+//option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+//  info: {
+//    title: "Weave GitOps Application API",
+//    version: "0.1",
+//    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications",
+//  },
+//  consumes: "apps/json",
+//  produces: "apps/json",
+//};
 
 message App {
   string name = 1;
@@ -55,9 +55,10 @@ message ListAppResponse {
 }
 
 message RemoveAppRequest {
-  string name = 1;
-  string namespace = 2;
-  bool   autoMerge = 3;
+  string repo_name = 1;
+  string name = 2;
+  string namespace = 3;
+  bool   autoMerge = 4;
 }
 
 message RemoveAppResponse {
@@ -70,7 +71,7 @@ service Apps {
     */
   rpc AddApp(AddAppRequest) returns (AddAppResponse) {
     option (google.api.http) = {
-      post : "/v1/app"
+      post : "/v1/repo/{repo_name}/app"
       body: "*"
     };
   }
@@ -98,7 +99,7 @@ service Apps {
   */
   rpc RemoveApp(RemoveAppRequest) returns (RemoveAppResponse) {
     option (google.api.http) = {
-      delete : "/v1/app/{name}"
+      delete : "/v1/repo/{repo_name}/app/{name}"
       body: "*"
     };
   }

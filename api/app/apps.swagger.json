@@ -1,9 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Weave GitOps Application API",
-    "description": "The Weave GitOps Application API handles operations for Weave GitOps Applications",
-    "version": "0.1"
+    "title": "api/app/apps.proto",
+    "version": "version not set"
   },
   "tags": [
     {
@@ -11,92 +10,12 @@
     }
   ],
   "consumes": [
-    "apps/json"
+    "application/json"
   ],
   "produces": [
-    "apps/json"
+    "application/json"
   ],
   "paths": {
-    "/v1/app": {
-      "post": {
-        "summary": "AddApplication adds an Application to a cluster via GitOps.",
-        "operationId": "Apps_AddApp",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1AddAppResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1AddAppRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Apps"
-        ]
-      }
-    },
-    "/v1/app/{name}": {
-      "delete": {
-        "summary": "RemoveApplication removes an Application from a cluster via GitOps.",
-        "operationId": "Apps_RemoveApp",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1RemoveAppResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "namespace": {
-                  "type": "string"
-                },
-                "autoMerge": {
-                  "type": "boolean"
-                }
-              }
-            }
-          }
-        ],
-        "tags": [
-          "Apps"
-        ]
-      }
-    },
     "/v1/repo/{repoName}/app": {
       "get": {
         "summary": "ListApplications returns the list of WeGo applications that the authenticated user has access to.",
@@ -121,6 +40,54 @@
             "in": "path",
             "required": true,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      },
+      "post": {
+        "summary": "AddApplication adds an Application to a cluster via GitOps.",
+        "operationId": "Apps_AddApp",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddAppResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            }
           }
         ],
         "tags": [
@@ -164,6 +131,59 @@
           "Apps"
         ]
       }
+    },
+    "/v1/repo/{repoName}/app/{name}": {
+      "delete": {
+        "summary": "RemoveApplication removes an Application from a cluster via GitOps.",
+        "operationId": "Apps_RemoveApp",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemoveAppResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repoName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "namespace": {
+                  "type": "string"
+                },
+                "autoMerge": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      }
     }
   },
   "definitions": {
@@ -193,23 +213,6 @@
           "items": {
             "$ref": "#/definitions/protobufAny"
           }
-        }
-      }
-    },
-    "v1AddAppRequest": {
-      "type": "object",
-      "properties": {
-        "repoName": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "displayName": {
-          "type": "string"
         }
       }
     },

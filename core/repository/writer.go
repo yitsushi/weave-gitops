@@ -25,13 +25,6 @@ type GitWriter interface {
 	RemoveCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
 }
 
-func NewGitWriter(gitClient git.Git, repo repository.GitRepository) GitWriter {
-	return &defaultGitWriter{
-		gitClient:        gitClient,
-		sourceRepository: repo,
-	}
-}
-
 type defaultGitWriter struct {
 	gitClient        git.Git
 	sourceRepository repository.GitRepository

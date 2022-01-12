@@ -65,9 +65,9 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitCommitter(), "test")
+	gitopsInstaller := install.NewGitopsInstaller(repository.NewGitWriter(false), "test")
 
-	err = gitopsInstaller.Install(repo, toolkitFiles)
+	err = gitopsInstaller.Install(repo, internal.StubAuth{}, toolkitFiles)
 	if err != nil {
 		return fmt.Errorf("there was an issue installing Weave Gitops: %w", err)
 	}

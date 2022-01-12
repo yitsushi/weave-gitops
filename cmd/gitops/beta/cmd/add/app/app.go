@@ -20,12 +20,14 @@ import (
 const (
 	namespaceFlag   = "namespace"
 	descriptionFlag = "description"
+	displayNameFlag = "display-name"
 )
 
 type Params struct {
 	Name        string
 	Namespace   string
 	Description string
+	DisplayName string
 }
 
 var (
@@ -53,6 +55,7 @@ var AppCmd = &cobra.Command{
 func init() {
 	AppCmd.Flags().StringVar(&params.Namespace, namespaceFlag, "", "Namespace for the app")
 	AppCmd.Flags().StringVar(&params.Description, descriptionFlag, "", "Description of the app")
+	AppCmd.Flags().StringVar(&params.Namespace, displayNameFlag, "", "Display name to use in the Weave GitOps app")
 }
 
 func runCmd(cmd *cobra.Command, args []string) error {
@@ -71,8 +74,17 @@ func createApp(r *bufio.Reader) error {
 		return err
 	}
 
-	gitCommitter := repository.NewGitCommitter()
+	gitCommitter := repository.NewGitWriter(false)
 	appSvc := app.NewCreator(gitCommitter)
+
+	if params.DisplayName == "" {
+		fmt.Printf("Display Name: ")
+
+		params.Namespace, err = readAndFormatInput(r, "display name")
+		if err != nil {
+			return err
+		}
+	}
 
 	if params.Namespace == "" {
 		fmt.Printf("Namespace (e.g. flux-system): ")
@@ -92,7 +104,11 @@ func createApp(r *bufio.Reader) error {
 		}
 	}
 
-	_, err = appSvc.Create(repo, params.Name, params.Namespace, params.Description)
+	_, err = appSvc.Create(repo, internal.StubAuth{}, app.CreateInput{
+		Name:        params.Name,
+		Namespace:   params.Namespace,
+		Description: params.Description,
+	})
 	if err != nil {
 		return fmt.Errorf("issue creating an app: %w", err)
 	}

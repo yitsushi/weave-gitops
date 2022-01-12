@@ -42,6 +42,7 @@ export type ListAppResponse = {
 }
 
 export type RemoveAppRequest = {
+  repoName?: string
   name?: string
   namespace?: string
   autoMerge?: boolean
@@ -53,7 +54,7 @@ export type RemoveAppResponse = {
 
 export class Apps {
   static AddApp(req: AddAppRequest, initReq?: fm.InitReq): Promise<AddAppResponse> {
-    return fm.fetchReq<AddAppRequest, AddAppResponse>(`/v1/app`, {...initReq, method: "POST", body: JSON.stringify(req)})
+    return fm.fetchReq<AddAppRequest, AddAppResponse>(`/v1/repo/${req["repoName"]}/app`, {...initReq, method: "POST", body: JSON.stringify(req)})
   }
   static GetApp(req: GetAppRequest, initReq?: fm.InitReq): Promise<GetAppResponse> {
     return fm.fetchReq<GetAppRequest, GetAppResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}?${fm.renderURLSearchParams(req, ["repoName", "appName"])}`, {...initReq, method: "GET"})
@@ -62,6 +63,6 @@ export class Apps {
     return fm.fetchReq<ListAppRequest, ListAppResponse>(`/v1/repo/${req["repoName"]}/app?${fm.renderURLSearchParams(req, ["repoName"])}`, {...initReq, method: "GET"})
   }
   static RemoveApp(req: RemoveAppRequest, initReq?: fm.InitReq): Promise<RemoveAppResponse> {
-    return fm.fetchReq<RemoveAppRequest, RemoveAppResponse>(`/v1/app/${req["name"]}`, {...initReq, method: "DELETE", body: JSON.stringify(req)})
+    return fm.fetchReq<RemoveAppRequest, RemoveAppResponse>(`/v1/repo/${req["repoName"]}/app/${req["name"]}`, {...initReq, method: "DELETE", body: JSON.stringify(req)})
   }
 }

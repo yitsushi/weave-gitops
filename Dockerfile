@@ -15,9 +15,14 @@ FROM golang:1.17 AS go-build
 COPY . /app
 WORKDIR /app
 # Remove flux to ensure the correct version is installed
-RUN make clean
+# RUN make clean
 COPY --from=ui /home/app/cmd/gitops/ui/run/dist/ /app/cmd/gitops/ui/run/dist/
-RUN make dependencies && make bin
+RUN make dependencies
+
+RUN go mod download
+COPY . .
+
+RUN make bin
 # Add known_hosts entries for GitHub and GitLab
 RUN mkdir ~/.ssh
 RUN ssh-keyscan github.com >> ~/.ssh/known_hosts

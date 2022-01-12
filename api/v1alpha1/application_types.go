@@ -42,6 +42,8 @@ type ApplicationSpec struct {
 	HelmTargetNamespace string `json:"helm_target_namespace,omitempty"`
 	// Description is a description of the application
 	Description string `json:"description"`
+	// DisplayName is a description of the application
+	DisplayName string `json:"description"`
 }
 
 // +kubebuilder:validation:Enum=helm;kustomize

@@ -85,6 +85,7 @@ type App struct {
 	Name        string `json:"name"`
 	Namespace   string `json:"namespace"`
 	Description string `json:"description"`
+	DisplayName string `json:"displayName"`
 }
 
 func (a App) path(fileName string) string {
@@ -121,6 +122,7 @@ func (a App) CustomResource() v1alpha1.Application {
 		},
 		Spec: v1alpha1.ApplicationSpec{
 			Description: a.Description,
+			DisplayName: a.DisplayName,
 		},
 		Status: v1alpha1.ApplicationStatus{},
 	}

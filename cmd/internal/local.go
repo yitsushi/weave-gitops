@@ -54,3 +54,13 @@ func ReadDir(directories []string) ([][]repository.File, error) {
 
 	return toolkitFiles, nil
 }
+
+type StubAuth struct{}
+
+func (StubAuth) String() string {
+	return ""
+}
+
+func (StubAuth) Name() string {
+	return ""
+}

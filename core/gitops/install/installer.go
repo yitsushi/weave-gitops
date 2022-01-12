@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"github.com/weaveworks/weave-gitops/manifests"
 )
 
 type Installer interface {
-	Install(repo *git.Repository, toolkitFiles [][]repository.File) error
+	Install(repo *git.Repository, auth transport.AuthMethod, toolkitFiles [][]repository.File) error
 }
 
 type gitopsInstall struct {
@@ -25,7 +26,7 @@ func NewGitopsInstaller(adder repository.Committer, version string) Installer {
 	}
 }
 
-func (gi gitopsInstall) Install(repo *git.Repository, toolkitFiles [][]repository.File) error {
+func (gi gitopsInstall) Install(repo *git.Repository, auth transport.AuthMethod, toolkitFiles [][]repository.File) error {
 
 	for _, tkf := range toolkitFiles {
 		toolkit, err := types.NewGitopsToolkit(tkf)
@@ -48,7 +49,7 @@ func (gi gitopsInstall) Install(repo *git.Repository, toolkitFiles [][]repositor
 
 		files = append(files, systemFiles...)
 
-		_, err = gi.committerSvc.Commit(repo, fmt.Sprintf("Installed Weave GitOps in %s", toolkit.ClusterName), files)
+		_, err = gi.committerSvc.Commit(repo, auth, fmt.Sprintf("Installed Weave GitOps in %s", toolkit.ClusterName), files)
 		if err != nil {
 			return fmt.Errorf("there was an issue creating a commit: %w", err)
 		}

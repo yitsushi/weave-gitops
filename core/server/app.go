@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
@@ -26,14 +25,16 @@ type appServer struct {
 
 	creator     app.Creator
 	fetcher     app.Fetcher
+	remover     app.Remover
 	repoManager repository.Manager
 	sourceSvc   source.Service
 }
 
-func NewAppServer(creator app.Creator, fetcher app.Fetcher, sourceSvc source.Service, repoManager repository.Manager) pb.AppsServer {
+func NewAppServer(creator app.Creator, fetcher app.Fetcher, remover app.Remover, sourceSvc source.Service, repoManager repository.Manager) pb.AppsServer {
 	return &appServer{
 		creator:     creator,
 		fetcher:     fetcher,
+		remover:     remover,
 		repoManager: repoManager,
 		sourceSvc:   sourceSvc,
 	}
@@ -42,25 +43,33 @@ func NewAppServer(creator app.Creator, fetcher app.Fetcher, sourceSvc source.Ser
 func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddAppResponse, error) {
 	sourceRepo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "create app: unable to get config repo: %s", err.Error())
 	}
 
 	key, err := a.sourceSvc.GetClientKey(context.Background(), types.FluxNamespace, sourceRepo)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get git repo key: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "create app: unable to get git repo key: %s", err.Error())
 	}
 
 	repo, err := a.repoManager.Get(context.Background(), key, sourceRepo.Spec.URL, "test")
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get git repo: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "create app: unable to get git repo: %s", err.Error())
 	}
 
-	app, err := a.creator.Create(repo, msg.Name, types.FluxNamespace, msg.DisplayName)
+	app, err := a.creator.Create(repo, key, app.CreateInput{
+		Name:        msg.Name,
+		Namespace:   types.FluxNamespace,
+		Description: msg.Description,
+		DisplayName: msg.DisplayName,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to create new app: %s", err.Error())
 	}
 
-	return &pb.AddAppResponse{App: newProtoApp(app)}, nil
+	return &pb.AddAppResponse{
+		App:     newProtoApp(app),
+		Success: true,
+	}, nil
 }
 
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {
@@ -91,5 +100,31 @@ func (a *appServer) ListApps(_ context.Context, msg *pb.ListAppRequest) (*pb.Lis
 }
 
 func (a *appServer) RemoveApp(ctx context.Context, msg *pb.RemoveAppRequest) (*pb.RemoveAppResponse, error) {
-	return nil, errors.New("not implemented")
+	sourceRepo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "remove app: unable to get config repo: %s", err.Error())
+	}
+
+	key, err := a.sourceSvc.GetClientKey(context.Background(), types.FluxNamespace, sourceRepo)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "remove app: unable to get git repo key: %s", err.Error())
+	}
+
+	repo, err := a.repoManager.Get(context.Background(), key, sourceRepo.Spec.URL, "test")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "remove app: unable to get git repo: %s", err.Error())
+	}
+
+	err = a.remover.Remove(repo, key, msg.Name, types.FluxNamespace, msg.RepoName)
+	if err == types.ErrNotFound {
+		return &pb.RemoveAppResponse{
+			Success: true,
+		}, nil
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to remove app: %s", err.Error())
+	}
+
+	return &pb.RemoveAppResponse{
+		Success: true,
+	}, nil
 }

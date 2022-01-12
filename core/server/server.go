@@ -19,10 +19,17 @@ func Hydrate(ctx context.Context, mux *runtime.ServeMux) error {
 	}
 
 	sourceSvc := source.NewService(k8sClient, source.GitopsRuntimeExclusionList)
-	appFetcher := app.NewFetcher(sourceSvc)
 
 	repoManager := repository.NewRepoManager()
-	newAppServer := NewAppServer(appFetcher, sourceSvc, repoManager)
+
+	writerSvc := repository.NewGitWriter(true)
+	appCreator := app.NewCreator(writerSvc)
+	appFetcher := app.NewFetcher(sourceSvc)
+
+	deleterSvc := repository.NewGitDeleter(true)
+	appRemover := app.NewRemover(deleterSvc, appFetcher)
+
+	newAppServer := NewAppServer(appCreator, appFetcher, appRemover, sourceSvc, repoManager)
 	if err := pb.RegisterAppsHandlerServer(ctx, mux, newAppServer); err != nil {
 		return fmt.Errorf("could not register new app: %w", err)
 	}
