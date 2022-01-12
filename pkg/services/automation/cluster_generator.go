@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fluxcd/go-git-providers/gitprovider"
 	"github.com/weaveworks/weave-gitops/pkg/git"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,20 +56,31 @@ func createClusterSourceName(gitSourceURL gitproviders.RepoURL) string {
 	return lengthConstrainedName
 }
 
-func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string) (ClusterAutomation, error) {
-	secretRef, err := a.GetSecretRefForPrivateGitSources(ctx, configURL)
+type ClusterAutomationParams struct {
+	ConfigURL      gitproviders.RepoURL
+	Branch         string
+	RepoVisibility gitprovider.RepositoryVisibility
+
+	Cluster models.Cluster
+
+	CreateNamespace bool
+	Namespace       string
+}
+
+func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, params ClusterAutomationParams) (ClusterAutomation, error) {
+	secretRef, err := a.GetSecretRefForPrivateGitSources(ctx, params.ConfigURL)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
 	secretStr := secretRef.String()
 
-	configBranch, err := a.GitProvider.GetDefaultBranch(ctx, configURL)
+	configBranch, err := a.GitProvider.GetDefaultBranch(ctx, params.ConfigURL)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
-	runtimeManifests, err := a.Flux.Install(namespace, true)
+	runtimeManifests, err := a.Flux.Install(params.Namespace, true)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
@@ -80,33 +92,33 @@ func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, cluster m
 		version = "latest"
 	}
 
-	m, err := manifests.GenerateManifests(manifests.Params{AppVersion: version, Namespace: namespace})
+	m, err := manifests.GenerateManifests(manifests.Params{AppVersion: version, Namespace: params.Namespace, CreateNamespace: params.CreateNamespace})
 	if err != nil {
 		return ClusterAutomation{}, fmt.Errorf("error generating wego-app manifest: %w", err)
 	}
 
 	wegoAppManifest := bytes.Join(m, []byte("---\n"))
 
-	sourceName := createClusterSourceName(configURL)
+	sourceName := createClusterSourceName(params.ConfigURL)
 
-	sourceManifest, err := a.Flux.CreateSourceGit(sourceName, configURL, configBranch, secretStr, namespace)
+	sourceManifest, err := a.Flux.CreateSourceGit(sourceName, params.ConfigURL, configBranch, secretStr, params.Namespace)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
-	systemKustResourceManifest, err := a.Flux.CreateKustomization(ConstrainResourceName(fmt.Sprintf("%s-system", cluster.Name)), sourceName,
-		workAroundFluxDroppingDot(git.GetSystemPath(cluster.Name)), namespace)
+	systemKustResourceManifest, err := a.Flux.CreateKustomization(ConstrainResourceName(fmt.Sprintf("%s-system", params.Cluster.Name)), sourceName,
+		workAroundFluxDroppingDot(git.GetSystemPath(params.Cluster.Name)), params.Namespace)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
-	userKustResourceManifest, err := a.Flux.CreateKustomization(ConstrainResourceName(fmt.Sprintf("%s-user", cluster.Name)), sourceName,
-		workAroundFluxDroppingDot(git.GetUserPath(cluster.Name)), namespace)
+	userKustResourceManifest, err := a.Flux.CreateKustomization(ConstrainResourceName(fmt.Sprintf("%s-user", params.Cluster.Name)), sourceName,
+		workAroundFluxDroppingDot(git.GetUserPath(params.Cluster.Name)), params.Namespace)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
-	systemKustomization := CreateKustomize(cluster.Name, namespace, RuntimePath, SourcePath, SystemKustResourcePath, UserKustResourcePath)
+	systemKustomization := CreateKustomize(params.Cluster.Name, params.Namespace, RuntimePath, SourcePath, SystemKustResourcePath, UserKustResourcePath)
 
 	systemKustomizationManifest, err := yaml.Marshal(systemKustomization)
 	if err != nil {
@@ -115,31 +127,31 @@ func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, cluster m
 
 	return ClusterAutomation{
 		AppCRD: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, AppCRDPath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, AppCRDPath),
 			Content: appCRDManifest,
 		},
 		GitOpsRuntime: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, RuntimePath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, RuntimePath),
 			Content: runtimeManifests,
 		},
 		SourceManifest: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, SourcePath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, SourcePath),
 			Content: sourceManifest,
 		},
 		SystemKustomizationManifest: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, SystemKustomizationPath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, SystemKustomizationPath),
 			Content: systemKustomizationManifest,
 		},
 		SystemKustResourceManifest: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, SystemKustResourcePath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, SystemKustResourcePath),
 			Content: systemKustResourceManifest,
 		},
 		UserKustResourceManifest: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, UserKustResourcePath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, UserKustResourcePath),
 			Content: userKustResourceManifest,
 		},
 		WegoAppManifest: AutomationManifest{
-			Path:    git.GetSystemQualifiedPath(cluster.Name, WegoAppPath),
+			Path:    git.GetSystemQualifiedPath(params.Cluster.Name, WegoAppPath),
 			Content: wegoAppManifest,
 		},
 	}, nil

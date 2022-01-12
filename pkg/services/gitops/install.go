@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/weaveworks/weave-gitops/pkg/flux"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/weaveworks/weave-gitops/pkg/flux"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -76,8 +77,9 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 		}
 
 		wegoAppManifests, err := manifests.GenerateManifests(manifests.Params{
-			AppVersion: version,
-			Namespace:  params.Namespace,
+			AppVersion:      version,
+			Namespace:       params.Namespace,
+			CreateNamespace: true,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating wego-app manifests, %w", err)

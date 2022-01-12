@@ -29,7 +29,7 @@ var _ GitOpsDirectoryWriter = &gitOpsDirectoryWriterSvc{}
 type GitOpsDirectoryWriter interface {
 	AddApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
 	RemoveApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
-	AssociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string, fluxNamespace string, autoMerge bool) error
+	AssociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string, fluxNamespace string, autoMerge bool, createNamespace bool) error
 }
 
 type gitOpsDirectoryWriterSvc struct {
@@ -195,8 +195,14 @@ func (dw *gitOpsDirectoryWriterSvc) AssociateCluster(
 	configURL gitproviders.RepoURL,
 	namespace string,
 	fluxNamespace string,
-	autoMerge bool) error {
-	auto, err := dw.Automation.GenerateClusterAutomation(ctx, cluster, configURL, namespace)
+	autoMerge bool,
+	createNamespace bool) error {
+	auto, err := dw.Automation.GenerateClusterAutomation(ctx, automation.ClusterAutomationParams{
+		Cluster:         cluster,
+		ConfigURL:       configURL,
+		Namespace:       namespace,
+		CreateNamespace: createNamespace,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate cluster automation: %w", err)
 	}

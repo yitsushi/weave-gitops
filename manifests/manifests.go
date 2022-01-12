@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	wegoManifestsDir = "wego-app"
+	wegoManifestsDir  = "wego-app"
+	namespaceFilename = "_namespace.yaml.tpl"
 )
 
 var (
@@ -21,8 +22,9 @@ var (
 )
 
 type Params struct {
-	AppVersion string
-	Namespace  string
+	AppVersion      string
+	Namespace       string
+	CreateNamespace bool
 }
 
 // GenerateManifests generates weave-gitops manifests from a template
@@ -36,6 +38,10 @@ func GenerateManifests(params Params) ([][]byte, error) {
 
 	for _, template := range templates {
 		tplName := template.Name()
+
+		if !params.CreateNamespace && tplName == namespaceFilename {
+			continue
+		}
 
 		data, err := fs.ReadFile(wegoAppTemplates, filepath.Join(wegoManifestsDir, tplName))
 		if err != nil {

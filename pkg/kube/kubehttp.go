@@ -64,7 +64,9 @@ var (
 )
 
 const (
-	WegoConfigMapName = "weave-gitops-config"
+	WegoConfigMapName    = "weave-gitops-config"
+	FluxPartOfLabelKey   = "app.kubernetes.io/part-of"
+	FluxPartOfLabelValue = "flux"
 )
 
 var (
@@ -307,21 +309,29 @@ func (c *KubeHTTP) DeleteByName(ctx context.Context, name string, gvr schema.Gro
 }
 
 func (k *KubeHTTP) FluxPresent(ctx context.Context) (bool, error) {
-	key := types.NamespacedName{
-		Name: FluxNamespace,
-	}
+	wegoConfig, err := k.GetWegoConfig(ctx, "")
+	if err != nil {
+		if !errors.Is(err, ErrWegoConfigNotFound) {
+			return false, fmt.Errorf("failed getting wego config: %w", err)
+		}
 
-	ns := corev1.Namespace{}
+		_, err := k.FetchNamespaceWithLabel(ctx, FluxPartOfLabelKey, FluxPartOfLabelValue)
+		if err != nil {
+			if !errors.Is(err, ErrNamespaceNotFound) {
+				return false, fmt.Errorf("failed getting flux namespace: %w", err)
+			}
 
-	if err := k.Client.Get(ctx, key, &ns); err != nil {
-		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
 
-		return false, fmt.Errorf("could not find flux namespace: %w", err)
+		return true, nil
 	}
 
-	return true, nil
+	if wegoConfig.WegoNamespace != "" && wegoConfig.WegoNamespace != wegoConfig.FluxNamespace {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (k *KubeHTTP) NamespacePresent(ctx context.Context, namespace string) (bool, error) {
