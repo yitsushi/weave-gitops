@@ -6,6 +6,7 @@ import (
 
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
+	"github.com/weaveworks/weave-gitops/core/repository"
 	"github.com/weaveworks/weave-gitops/core/source"
 	pb "github.com/weaveworks/weave-gitops/pkg/api/app"
 	"google.golang.org/grpc/codes"
@@ -23,38 +24,43 @@ func newProtoApp(a types.App) *pb.App {
 type appServer struct {
 	pb.UnimplementedAppsServer
 
-	fetcher   app.Fetcher
-	sourceSvc source.Service
+	creator     app.Creator
+	fetcher     app.Fetcher
+	repoManager repository.Manager
+	sourceSvc   source.Service
 }
 
-func NewAppServer(fetcher app.Fetcher, sourceSvc source.Service) pb.AppsServer {
+func NewAppServer(creator app.Creator, fetcher app.Fetcher, sourceSvc source.Service, repoManager repository.Manager) pb.AppsServer {
 	return &appServer{
-		fetcher:   fetcher,
-		sourceSvc: sourceSvc,
+		creator:     creator,
+		fetcher:     fetcher,
+		repoManager: repoManager,
+		sourceSvc:   sourceSvc,
 	}
 }
 
 func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddAppResponse, error) {
-	//repo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
-	//if err != nil {
-	//	return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
-	//}
-	//
-	//gitClient, err := a.sourceSvc.GitClient(context.Background(), types.FluxNamespace, repo)
-	//if err != nil {
-	//	return nil, status.Errorf(codes.Internal, "unable to get git client: %s", err.Error())
-	//}
-	//
-	//gitSvc := repository.NewGitWriter(gitClient, repo)
-	//appSvc := app.NewCreator(gitSvc)
-	//
-	//app, err := appSvc.Create(msg.Name, types.FluxNamespace, msg.DisplayName, "delta")
-	//if err != nil {
-	//	return nil, status.Errorf(codes.Internal, "unable to create new app: %s", err.Error())
-	//}
+	sourceRepo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get config repo: %s", err.Error())
+	}
 
-	//return &pb.AddAppResponse{App: newProtoApp(app)}, nil
-	return nil, errors.New("not implemented")
+	key, err := a.sourceSvc.GetClientKey(context.Background(), types.FluxNamespace, sourceRepo)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get git repo key: %s", err.Error())
+	}
+
+	repo, err := a.repoManager.Get(context.Background(), key, sourceRepo.Spec.URL, "test")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get git repo: %s", err.Error())
+	}
+
+	app, err := a.creator.Create(repo, msg.Name, types.FluxNamespace, msg.DisplayName)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to create new app: %s", err.Error())
+	}
+
+	return &pb.AddAppResponse{App: newProtoApp(app)}, nil
 }
 
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {

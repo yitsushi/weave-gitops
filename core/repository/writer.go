@@ -27,14 +27,14 @@ type GitWriter interface {
 
 func NewGitWriter(gitClient git.Git, repo repository.GitRepository) GitWriter {
 	return &defaultGitWriter{
-		gitClient: gitClient,
-		repo:      repo,
+		gitClient:        gitClient,
+		sourceRepository: repo,
 	}
 }
 
 type defaultGitWriter struct {
-	gitClient git.Git
-	repo      repository.GitRepository
+	gitClient        git.Git
+	sourceRepository repository.GitRepository
 }
 
 func (d defaultGitWriter) AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
@@ -43,9 +43,9 @@ func (d defaultGitWriter) AddCommitAndPush(ctx context.Context, branch, commitMe
 		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
 	}
 
-	_, err = d.gitClient.Clone(ctx, repoDir, d.repo.Spec.URL, branch)
+	_, err = d.gitClient.Clone(ctx, repoDir, d.sourceRepository.Spec.URL, branch)
 	if err != nil {
-		return fmt.Errorf("failed cloning repo: %s: %w", d.repo.Spec.URL, err)
+		return fmt.Errorf("failed cloning repo: %s: %w", d.sourceRepository.Spec.URL, err)
 	}
 
 	defer os.RemoveAll(repoDir)
@@ -65,9 +65,9 @@ func (d defaultGitWriter) RemoveCommitAndPush(ctx context.Context, branch, commi
 		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
 	}
 
-	_, err = d.gitClient.Clone(ctx, repoDir, d.repo.Spec.URL, branch)
+	_, err = d.gitClient.Clone(ctx, repoDir, d.sourceRepository.Spec.URL, branch)
 	if err != nil {
-		return fmt.Errorf("failed cloning repo: %s: %w", d.repo.Spec.URL, err)
+		return fmt.Errorf("failed cloning repo: %s: %w", d.sourceRepository.Spec.URL, err)
 	}
 
 	defer os.RemoveAll(repoDir)

@@ -49,6 +49,7 @@ type Service interface {
 	Get(ctx context.Context, name, namespace string) (repository.GitRepository, error)
 	GetArtifact(ctx context.Context, name, namespace string) ([]FileJson, error)
 	GitClient(ctx context.Context, namespace string, repository repository.GitRepository) (git.Git, error)
+	GetClientKey(ctx context.Context, namespace string, repository repository.GitRepository) (*ssh.PublicKeys, error)
 }
 
 type defaultService struct {
@@ -189,4 +190,25 @@ func (gr *defaultService) GitClient(ctx context.Context, namespace string, repos
 
 	// Set the git client to use the existing deploy key.
 	return git.New(pubKey, wrapper.NewGoGit()), nil
+}
+
+func (gr *defaultService) GetClientKey(ctx context.Context, namespace string, repository repository.GitRepository) (*ssh.PublicKeys, error) {
+	secret := &corev1.Secret{}
+	if err := gr.client.Get(ctx, types.NamespacedName{
+		Namespace: namespace,
+		Name:      repository.Spec.SecretRef.Name,
+	}, secret); apierrors.IsNotFound(err) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("error getting deploy key secret: %w", err)
+	}
+
+	pemBytes := auth.ExtractPrivateKey(secret)
+
+	pubKey, err := ssh.NewPublicKeys("git", pemBytes, "")
+	if err != nil {
+		return nil, fmt.Errorf("could not create public key from secret: %w", err)
+	}
+
+	return pubKey, nil
 }
