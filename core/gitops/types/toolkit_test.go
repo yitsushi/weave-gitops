@@ -48,12 +48,12 @@ spec:
 
 type toolkitFixture struct {
 	*GomegaWithT
-	committer repository.Committer
+	committer repository.Writer
 }
 
 func setUpToolkitFixture(t *testing.T) toolkitFixture {
 	return toolkitFixture{
-		committer:   repository.NewGitCommitter(),
+		committer:   repository.NewGitWriter(false),
 		GomegaWithT: NewGomegaWithT(t),
 	}
 }

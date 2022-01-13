@@ -1,13 +1,13 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Weave GitOps Application API",
+    "title": "Weave GitOps App Kustomization API",
     "description": "The Weave GitOps Application API handles operations for Weave GitOps Applications",
     "version": "0.1"
   },
   "tags": [
     {
-      "name": "Apps"
+      "name": "AppKustomization"
     }
   ],
   "consumes": [
@@ -17,94 +17,15 @@
     "apps/json"
   ],
   "paths": {
-    "/v1/repo/{repoName}/app": {
-      "get": {
-        "summary": "ListApplications returns the list of WeGo applications that the authenticated user has access to.",
-        "operationId": "Apps_ListApps",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1ListAppResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "repoName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Apps"
-        ]
-      },
+    "/v1/repo/{repoName}/app/{appName}/kustomization": {
       "post": {
-        "summary": "AddApplication adds an Application to a cluster via GitOps.",
-        "operationId": "Apps_AddApp",
+        "summary": "AddKustomization adds a Kustomization to a cluster via GitOps.",
+        "operationId": "AppKustomization_Add",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1AddAppResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "repoName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "displayName": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        ],
-        "tags": [
-          "Apps"
-        ]
-      }
-    },
-    "/v1/repo/{repoName}/app/{appName}": {
-      "get": {
-        "summary": "GetApplication returns a given application",
-        "operationId": "Apps_GetApp",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1GetAppResponse"
+              "$ref": "#/definitions/v1AddKustomizationResponse"
             }
           },
           "default": {
@@ -126,22 +47,47 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "namespace": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sourceRef": {
+                  "$ref": "#/definitions/v1SourceRef"
+                },
+                "interval": {
+                  "$ref": "#/definitions/v1Interval"
+                }
+              }
+            }
           }
         ],
         "tags": [
-          "Apps"
+          "AppKustomization"
         ]
       }
     },
-    "/v1/repo/{repoName}/app/{name}": {
+    "/v1/repo/{repoName}/app/{appName}/kustomization/{kustomizationName}": {
       "delete": {
-        "summary": "RemoveApplication removes an Application from a cluster via GitOps.",
-        "operationId": "Apps_RemoveApp",
+        "summary": "RemoveKustomization removes a Kustomization from a cluster via GitOps.",
+        "operationId": "AppKustomization_Remove",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1RemoveAppResponse"
+              "$ref": "#/definitions/v1RemoveKustomizationResponse"
             }
           },
           "default": {
@@ -159,7 +105,13 @@
             "type": "string"
           },
           {
-            "name": "name",
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kustomizationName",
             "in": "path",
             "required": true,
             "type": "string"
@@ -169,25 +121,26 @@
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object",
-              "properties": {
-                "namespace": {
-                  "type": "string"
-                },
-                "autoMerge": {
-                  "type": "boolean"
-                }
-              }
+              "type": "object"
             }
           }
         ],
         "tags": [
-          "Apps"
+          "AppKustomization"
         ]
       }
     }
   },
   "definitions": {
+    "SourceRefKind": {
+      "type": "string",
+      "enum": [
+        "GitRepository",
+        "Bucket",
+        "HelmRepository"
+      ],
+      "default": "GitRepository"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -217,58 +170,70 @@
         }
       }
     },
-    "v1AddAppResponse": {
+    "v1AddKustomizationResponse": {
       "type": "object",
       "properties": {
         "success": {
           "type": "boolean"
         },
-        "app": {
-          "$ref": "#/definitions/v1App"
+        "kustomization": {
+          "$ref": "#/definitions/v1Kustomization"
         }
       }
     },
-    "v1App": {
+    "v1Interval": {
+      "type": "object",
+      "properties": {
+        "hours": {
+          "type": "string",
+          "format": "int64"
+        },
+        "minutes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "seconds": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1Kustomization": {
       "type": "object",
       "properties": {
         "name": {
           "type": "string"
         },
-        "description": {
+        "namespace": {
           "type": "string"
         },
-        "displayName": {
+        "path": {
           "type": "string"
         },
-        "id": {
-          "type": "string"
+        "sourceRef": {
+          "$ref": "#/definitions/v1SourceRef"
+        },
+        "interval": {
+          "$ref": "#/definitions/v1Interval"
         }
       }
     },
-    "v1GetAppResponse": {
-      "type": "object",
-      "properties": {
-        "app": {
-          "$ref": "#/definitions/v1App"
-        }
-      }
-    },
-    "v1ListAppResponse": {
-      "type": "object",
-      "properties": {
-        "apps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1App"
-          }
-        }
-      }
-    },
-    "v1RemoveAppResponse": {
+    "v1RemoveKustomizationResponse": {
       "type": "object",
       "properties": {
         "success": {
           "type": "boolean"
+        }
+      }
+    },
+    "v1SourceRef": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/SourceRefKind"
+        },
+        "name": {
+          "type": "string"
         }
       }
     }

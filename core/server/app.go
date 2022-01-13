@@ -99,7 +99,7 @@ func (a *appServer) ListApps(_ context.Context, msg *pb.ListAppRequest) (*pb.Lis
 	}, nil
 }
 
-func (a *appServer) RemoveApp(ctx context.Context, msg *pb.RemoveAppRequest) (*pb.RemoveAppResponse, error) {
+func (a *appServer) RemoveApp(_ context.Context, msg *pb.RemoveAppRequest) (*pb.RemoveAppResponse, error) {
 	sourceRepo, err := a.sourceSvc.Get(context.Background(), msg.RepoName, types.FluxNamespace)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "remove app: unable to get config repo: %s", err.Error())

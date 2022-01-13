@@ -3,7 +3,10 @@ package types
 import (
 	"testing"
 
+	"github.com/fluxcd/kustomize-controller/api/v1beta2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -46,7 +49,50 @@ func TestAppNameFromPath_ValidPaths(t *testing.T) {
 	f.Expect(appName).To(Equal("my-app-2"))
 }
 
-func TestAppFilesSuccess(t *testing.T) {
+func TestApp_AddAndGetKustomization(t *testing.T) {
+	f := setUpAppTest(t)
+
+	app := App{
+		Id:          "12345",
+		Name:        "my-app",
+		Namespace:   testNamespace,
+		Description: "This is my test application, it's going to take over the world",
+	}
+
+	kust1 := v1beta2.Kustomization{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1beta2.KustomizationKind,
+			APIVersion: v1beta2.GroupVersion.Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kust-1",
+			Namespace: testNamespace,
+		},
+		Spec:   v1beta2.KustomizationSpec{},
+		Status: v1beta2.KustomizationStatus{},
+	}
+	app.AddFluxKustomization(kust1)
+
+	kust2 := kust1
+	kust2.ObjectMeta.Namespace = "extra-namespace"
+	app.AddFluxKustomization(kust2)
+
+	f.Expect(app.kustomizations).To(HaveLen(2))
+
+	k, ok := app.GetFluxKustomization(ObjectKey{Name: "kust-1", Namespace: "extra-namespace"})
+	f.Expect(ok).To(BeTrue())
+	f.Expect(k).To(Equal(kust2))
+
+	k3, ok := app.GetFluxKustomization(ObjectKey{Name: "fake-kust", Namespace: "bad-robot"})
+	f.Expect(ok).To(BeFalse())
+	f.Expect(k3).To(Equal(v1beta2.Kustomization{}))
+}
+
+func TestApp_KustomizationFiles(t *testing.T) {
+
+}
+
+func TestAppFiles_Success(t *testing.T) {
 	f := setUpAppTest(t)
 	app := App{
 		Id:          "12345",
@@ -60,4 +106,10 @@ func TestAppFilesSuccess(t *testing.T) {
 	f.Expect(len(files)).To(Equal(2))
 	f.Expect(files[0].Path).To(Equal(app.path(appFilename)))
 	f.Expect(files[1].Path).To(Equal(app.path(kustomizationFilename)))
+
+	expectedKustomize := NewAppKustomization("my-app", testNamespace)
+	expectedKustomize.Resources = []string{files[0].Path}
+	expectedData, _ := yaml.Marshal(expectedKustomize)
+	f.Expect(files[1].Data).To(Equal(expectedData))
+
 }

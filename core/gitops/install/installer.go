@@ -16,10 +16,10 @@ type Installer interface {
 
 type gitopsInstall struct {
 	appVersion   string
-	committerSvc repository.Committer
+	committerSvc repository.Writer
 }
 
-func NewGitopsInstaller(adder repository.Committer, version string) Installer {
+func NewGitopsInstaller(adder repository.Writer, version string) Installer {
 	return &gitopsInstall{
 		appVersion:   version,
 		committerSvc: adder,

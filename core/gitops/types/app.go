@@ -2,8 +2,11 @@ package types
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/fluxcd/kustomize-controller/api/v1beta2"
+	"github.com/fluxcd/source-controller/api/v1beta1"
 	"github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,40 +83,67 @@ func gitopsLabel(suffix string) string {
 	return fmt.Sprintf("%s/%s", labelKey, suffix)
 }
 
-type App struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Namespace   string `json:"namespace"`
-	Description string `json:"description"`
-	DisplayName string `json:"displayName"`
-}
-
-func (a App) path(fileName string) string {
-	return appPath(a.Name, fileName)
-}
-
-func (a App) Kustomization() types.Kustomization {
+func NewAppKustomization(name, namespace string) types.Kustomization {
 	k := types.Kustomization{
 		TypeMeta: types.TypeMeta{
 			Kind:       types.KustomizationKind,
 			APIVersion: types.KustomizationVersion,
 		},
 		MetaData: &types.ObjectMeta{
-			Name:      a.Name,
-			Namespace: a.Namespace,
+			Name:      name,
+			Namespace: namespace,
 		},
 		CommonLabels: map[string]string{
-			gitopsLabel("app-id"): a.Id,
+			gitopsLabel("app-name"): name,
 		},
 	}
 
 	return k
 }
 
-func (a App) CustomResource() v1alpha1.Application {
+type App struct {
+	Id              string                              `json:"id"`
+	Name            string                              `json:"name"`
+	Namespace       string                              `json:"namespace"`
+	Description     string                              `json:"description"`
+	DisplayName     string                              `json:"displayName"`
+	kustomization   types.Kustomization                 `json:"kustomization"`
+	kustomizations  map[ObjectKey]v1beta2.Kustomization `json:"kustomizations"`
+	gitRepositories map[ObjectKey]v1beta1.GitRepository `json:"gitRepositories"`
+}
+
+func (a *App) path() string {
+	return fmt.Sprintf("%s/apps/%s", BaseDir, a.Name)
+}
+
+func (a *App) AddFluxKustomization(kustomization v1beta2.Kustomization) {
+	if a.kustomizations == nil {
+		a.kustomizations = map[ObjectKey]v1beta2.Kustomization{}
+	}
+	a.kustomizations[NewObjectKey(kustomization.ObjectMeta)] = kustomization
+}
+
+func (a *App) GetFluxKustomization(key ObjectKey) (v1beta2.Kustomization, bool) {
+	k, ok := a.kustomizations[key]
+	return k, ok
+}
+
+func (a *App) AddGitRepository(gitRepo v1beta1.GitRepository) {
+	if a.gitRepositories == nil {
+		a.gitRepositories = map[ObjectKey]v1beta1.GitRepository{}
+	}
+	a.gitRepositories[NewObjectKey(gitRepo.ObjectMeta)] = gitRepo
+}
+
+func (a *App) GetGitRepository(key ObjectKey) (v1beta1.GitRepository, bool) {
+	gr, ok := a.gitRepositories[key]
+	return gr, ok
+}
+
+func (a *App) CustomResource() v1alpha1.Application {
 	return v1alpha1.Application{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Application",
+			Kind:       ApplicationKind,
 			APIVersion: "gitops.weave.works/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -128,28 +158,51 @@ func (a App) CustomResource() v1alpha1.Application {
 	}
 }
 
-func (a App) Files() ([]repository.File, error) {
+func (a *App) Files() ([]repository.File, error) {
 	var files []repository.File
 
-	var kustomizeResources []string
+	var paths []string
 
 	customResource, err := yaml.Marshal(a.CustomResource())
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal custom resource into yaml: %w", a.Name, err)
 	}
 
-	files = append(files, repository.File{Path: a.path(appFilename), Data: customResource})
-	kustomizeResources = append(kustomizeResources, currentPath(appFilename))
+	appFilePath := filepath.Join(a.path(), appFilename)
+	files = append(files, repository.File{Path: appFilePath, Data: customResource})
+	paths = append(paths, currentPath(appFilePath))
 
-	kustomization := a.Kustomization()
-	kustomization.Resources = kustomizeResources
+	for _, v := range a.gitRepositories {
+		if file, err := gitRepositoryFile(a.path(), v); err != nil {
+			return nil, fmt.Errorf("app files: %w", err)
+		} else {
+			files = append(files, file)
+			paths = append(paths, file.Path)
+		}
+	}
 
-	kustomizeData, err := yaml.Marshal(kustomization)
+	for _, v := range a.kustomizations {
+		if file, err := kustomizationFile(a.path(), v); err != nil {
+			return nil, fmt.Errorf("app files: %w", err)
+		} else {
+			files = append(files, file)
+			paths = append(paths, file.Path)
+		}
+	}
+
+	if a.kustomization.MetaData == nil {
+		a.kustomization = NewAppKustomization(a.Name, a.Namespace)
+	}
+
+	a.kustomization.Resources = append(a.kustomization.Resources, paths...)
+
+	kustomizeData, err := yaml.Marshal(a.kustomization)
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
 	}
 
-	files = append(files, repository.File{Path: a.path(kustomizationFilename), Data: kustomizeData})
+	kustFilePath := filepath.Join(a.path(), kustomizationFilename)
+	files = append(files, repository.File{Path: kustFilePath, Data: kustomizeData})
 
 	return files, nil
 }

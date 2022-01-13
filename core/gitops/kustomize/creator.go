@@ -1,4 +1,4 @@
-package app
+package kustomize
 
 import (
 	"fmt"

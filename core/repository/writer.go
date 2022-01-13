@@ -1,13 +1,14 @@
 package repository
 
 import (
-	"context"
+	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"io"
+	"time"
 
-	repository "github.com/fluxcd/source-controller/api/v1beta1"
-	"github.com/weaveworks/weave-gitops/pkg/git"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
 const (
@@ -20,74 +21,81 @@ type File struct {
 	Data []byte
 }
 
-type GitWriter interface {
-	AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
-	RemoveCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error
+type Writer interface {
+	Commit(repo *git.Repository, auth transport.AuthMethod, msg string, files []File) (string, error)
 }
 
-type defaultGitWriter struct {
-	gitClient        git.Git
-	sourceRepository repository.GitRepository
+type gitWriter struct {
+	remove bool
+	push   bool
 }
 
-func (d defaultGitWriter) AddCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
-	repoDir, err := ioutil.TempDir("", "repo-")
-	if err != nil {
-		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
+func NewGitWriter(push bool) Writer {
+	return &gitWriter{
+		push:   push,
+		remove: false,
 	}
+}
 
-	_, err = d.gitClient.Clone(ctx, repoDir, d.sourceRepository.Spec.URL, branch)
-	if err != nil {
-		return fmt.Errorf("failed cloning repo: %s: %w", d.sourceRepository.Spec.URL, err)
+func NewGitDeleter(push bool) Writer {
+	return &gitWriter{
+		push:   push,
+		remove: true,
 	}
+}
 
-	defer os.RemoveAll(repoDir)
+func (g gitWriter) Commit(repo *git.Repository, auth transport.AuthMethod, msg string, files []File) (string, error) {
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return "", fmt.Errorf("unable to get worktree from repo: %w", err)
+	}
 
 	for _, file := range files {
-		if err := d.gitClient.Write(file.Path, file.Data); err != nil {
-			return fmt.Errorf("failed to write files: %w", err)
+
+		if g.remove {
+			err := worktree.Filesystem.Remove(file.Path)
+			if err != nil {
+				return "", fmt.Errorf("failed to remove file in %s: %w", file.Path, err)
+			}
+		} else {
+			f, err := worktree.Filesystem.Create(file.Path)
+			if err != nil {
+				return "", fmt.Errorf("failed to create file in %s: %w", file.Path, err)
+			}
+
+			_, err = io.Copy(f, bytes.NewReader(file.Data))
+			if err != nil {
+				return "", fmt.Errorf("failed to copy data to temp file in worktree %s: %w", file.Path, err)
+			}
+
+			_ = f.Close()
 		}
-	}
 
-	return d.commitAndPush(ctx, commitMessage)
-}
-
-func (d defaultGitWriter) RemoveCommitAndPush(ctx context.Context, branch, commitMessage string, files []File) error {
-	repoDir, err := ioutil.TempDir("", "repo-")
-	if err != nil {
-		return fmt.Errorf("failed creating temp. directory to clone repo: %w", err)
-	}
-
-	_, err = d.gitClient.Clone(ctx, repoDir, d.sourceRepository.Spec.URL, branch)
-	if err != nil {
-		return fmt.Errorf("failed cloning repo: %s: %w", d.sourceRepository.Spec.URL, err)
-	}
-
-	defer os.RemoveAll(repoDir)
-
-	for _, file := range files {
-		err = d.gitClient.Remove(file.Path)
+		err = worktree.AddWithOptions(&git.AddOptions{Path: file.Path})
 		if err != nil {
-			return fmt.Errorf("failed to remove files: %w", err)
+			return "", fmt.Errorf("unable to stage file: %s", err)
 		}
 	}
 
-	return d.commitAndPush(ctx, commitMessage)
-}
-
-func (d defaultGitWriter) commitAndPush(ctx context.Context, commitMessage string) error {
-	_, err := d.gitClient.Commit(git.Commit{
-		Author:  git.Author{Name: ClientName, Email: ClientEmail},
-		Message: commitMessage,
+	commit, err := worktree.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  ClientName,
+			Email: ClientEmail,
+			When:  time.Now(),
+		},
 	})
-
-	if err != nil && err != git.ErrNoStagedFiles {
-		return fmt.Errorf("failed to update the repository: %w", err)
+	if err != nil {
+		return "", fmt.Errorf("unable to commit: %w", err)
 	}
 
-	if err = d.gitClient.Push(ctx); err != nil {
-		return fmt.Errorf("failed to push changes: %w", err)
+	if g.push {
+		if err := repo.Push(&git.PushOptions{
+			RemoteName: git.DefaultRemoteName,
+			Auth:       auth,
+		}); err != nil {
+			return "", fmt.Errorf("could not push to remote: %s", err)
+		}
 	}
 
-	return nil
+	return commit.String(), nil
 }

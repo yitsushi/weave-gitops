@@ -14,7 +14,7 @@ type Remover interface {
 	Remove(repo *git.Repository, auth transport.AuthMethod, appName, namespace, repoName string) error
 }
 
-func NewRemover(commitSvc repository.Committer, fetcher Fetcher) Remover {
+func NewRemover(commitSvc repository.Writer, fetcher Fetcher) Remover {
 	return &appRemover{
 		commitSvc: commitSvc,
 		fetcher:   fetcher,
@@ -22,7 +22,7 @@ func NewRemover(commitSvc repository.Committer, fetcher Fetcher) Remover {
 }
 
 type appRemover struct {
-	commitSvc repository.Committer
+	commitSvc repository.Writer
 	fetcher   Fetcher
 }
 

@@ -6,17 +6,17 @@ option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
 
 import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
-//import "protoc-gen-openapiv2/options/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
-//option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-//  info: {
-//    title: "Weave GitOps Application API",
-//    version: "0.1",
-//    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications",
-//  },
-//  consumes: "apps/json",
-//  produces: "apps/json",
-//};
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Weave GitOps Application API",
+    version: "0.1",
+    description: "The Weave GitOps Application API handles operations for Weave GitOps Applications",
+  },
+  consumes: "apps/json",
+  produces: "apps/json",
+};
 
 message App {
   string name = 1;

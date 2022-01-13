@@ -13,7 +13,7 @@ const (
 
 type installerFixture struct {
 	*GomegaWithT
-	committer repository.Committer
+	committer repository.Writer
 }
 
 func setUpInstallerTest(t *testing.T) installerFixture {
