@@ -32,7 +32,7 @@ func Pre(ctx context.Context, kubeClient kube.Kube, fluxClient flux.Flux, expect
 
 	currentFluxVersion, err := getCurrentFluxVersion(ctx, kubeClient)
 	if err != nil {
-		if errors.Is(err, ErrFluxNotFound) {
+		if errors.Is(err, kube.ErrNamespaceNotFound) {
 			output += "✔ Flux is not installed"
 			return output, nil
 		}
@@ -73,11 +73,8 @@ func getCurrentFluxVersion(ctx context.Context, kubeClient kube.Kube) (string, e
 	}
 
 	labels := namespace.GetLabels()
-	if labels[flux.PartOfLabelKey] == flux.PartOfLabelValue {
-		return labels[flux.VersionLabelKey], nil
-	}
 
-	return "", ErrFluxNotFound
+	return labels[flux.VersionLabelKey], nil
 }
 
 func validateFluxVersion(actualFluxVersion string, expectedFluxVersion string) (string, error) {

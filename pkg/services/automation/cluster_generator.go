@@ -75,13 +75,6 @@ func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, params Cl
 
 	secretStr := secretRef.String()
 
-	// configBranch, err := a.GitProvider.GetDefaultBranch(ctx, params.ConfigURL)
-	// if err != nil {
-	// 	return ClusterAutomation{}, err
-	// }
-
-	fmt.Println("-----------------------------------------------------------")
-	fmt.Println(params.Branch)
 	runtimeManifests, err := a.Flux.Install(params.Namespace, true)
 	if err != nil {
 		return ClusterAutomation{}, err

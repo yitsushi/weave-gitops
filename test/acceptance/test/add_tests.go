@@ -78,7 +78,8 @@ var _ = Describe("Weave GitOps Add App Tests", func() {
 			output, err := c.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			expectedOutput := fmt.Sprintf(`✔ Kubernetes %s >=[0-9]+.[0-9]+\.[0-9]+-[0-9]+
-✔ Flux is not installed`,
+✔ Flux is not installed
+`,
 				getK8sVersion())
 			Expect(string(output)).To(MatchRegexp(expectedOutput))
 		})
@@ -211,7 +212,12 @@ var _ = Describe("Weave GitOps Add App Tests", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			expectedOutput := fmt.Sprintf(`✔ Kubernetes %s >=[0-9]+.[0-9]+\.[0-9]+-[0-9]+
 ✔ Flux %s ~=%s
+<<<<<<< HEAD
 %s`,
+=======
+%s
+`,
+>>>>>>> d7a354fa77124fe281cbc6c03234ccb60e7b35d1
 				getK8sVersion(),
 				fluxVersion, fluxVersion,
 				check.FluxCompatibleMessage)
