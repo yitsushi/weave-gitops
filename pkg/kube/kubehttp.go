@@ -315,13 +315,15 @@ func (k *KubeHTTP) FluxPresent(ctx context.Context) (bool, error) {
 			return false, fmt.Errorf("failed getting wego config: %w", err)
 		}
 
+		fmt.Println("I'm here")
+
 		_, err := k.FetchNamespaceWithLabel(ctx, FluxPartOfLabelKey, FluxPartOfLabelValue)
 		if err != nil {
-			if !errors.Is(err, ErrNamespaceNotFound) {
-				return false, fmt.Errorf("failed getting flux namespace: %w", err)
+			if errors.Is(err, ErrNamespaceNotFound) {
+				return false, nil
 			}
 
-			return false, nil
+			return false, fmt.Errorf("failed getting flux namespace: %w", err)
 		}
 
 		return true, nil

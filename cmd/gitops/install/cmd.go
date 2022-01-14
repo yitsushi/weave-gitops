@@ -60,7 +60,6 @@ repo. If a previous version is installed, then an in-place upgrade will be perfo
 const LabelPartOf = "app.kubernetes.io/part-of"
 
 func init() {
-
 	Cmd.Flags().BoolVar(&installParams.DryRun, "dry-run", false, "Outputs all the manifests that would be installed")
 	Cmd.Flags().BoolVar(&installParams.AutoMerge, "auto-merge", false, "If set, 'gitops install' will automatically update the default branch for the configuration repository")
 	Cmd.Flags().StringVar(&installParams.ConfigRepo, "config-repo", "", "URL of external repository that will hold automation manifests")
@@ -99,49 +98,42 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 
 	var gitClient git.Git
 
-	var gitProvider gitproviders.GitProvider
-
 	factory := services.NewFactory(flux, log)
 
-	if err != nil {
-		return fmt.Errorf("failed getting kube service: %w", err)
+	if !installParams.SkipFluxInstall {
+		_, err = flux.Install(installParams.Namespace, false)
+		if err != nil {
+			return err
+		}
 	}
 
-	if installParams.DryRun {
-		gitProvider, err = gitproviders.NewDryRun()
-		if err != nil {
-			return fmt.Errorf("error creating git provider for dry run: %w", err)
-		}
-	} else {
-		if !installParams.SkipFluxInstall {
-			_, err = flux.Install(installParams.Namespace, false)
-			if err != nil {
-				return err
-			}
-		}
+	providerClient := internal.NewGitProviderClient(osysClient.Stdout(), osysClient.LookupEnv, auth.NewAuthCLIHandler, log)
 
-		providerClient := internal.NewGitProviderClient(osysClient.Stdout(), osysClient.LookupEnv, auth.NewAuthCLIHandler, log)
+	gitProvider, err := providerClient.GetProvider(configURL, gitproviders.GetAccountType)
+	if err != nil {
+		return fmt.Errorf("error obtaining git provider token: %w", err)
+	}
 
-		gitClient, gitProvider, err = factory.GetGitClients(context.Background(), providerClient, services.GitConfigParams{
-			URL:       installParams.ConfigRepo,
-			Namespace: installParams.Namespace,
-			DryRun:    installParams.DryRun,
-		})
+	repoVisibility, err := gitProvider.GetRepoVisibility(ctx, configURL)
+	if err != nil {
+		return fmt.Errorf("failed getting config repo visibility: %w", err)
+	}
 
-		if err != nil {
-			return fmt.Errorf("error creating git clients: %w", err)
-		}
+	repoBranch, err := gitProvider.GetDefaultBranch(ctx, configURL)
+	if err != nil {
+		return fmt.Errorf("failed getting default branch for config repo: %w", err)
 	}
 
 	cluster := models.Cluster{Name: clusterName}
-	repoWriter := gitrepo.NewRepoWriter(configURL, gitProvider, gitClient, log)
+
 	automationGen := automation.NewAutomationGenerator(gitProvider, flux, log)
-	gitOpsDirWriter := gitopswriter.NewGitOpsDirectoryWriter(automationGen, repoWriter, osysClient, log)
 
 	clusterAutomation, err := automationGen.GenerateClusterAutomation(ctx, automation.ClusterAutomationParams{
 		Cluster:         cluster,
 		ConfigURL:       configURL,
 		Namespace:       installParams.Namespace,
+		RepoVisibility:  *repoVisibility,
+		Branch:          repoBranch,
 		CreateNamespace: installParams.SkipFluxInstall,
 	})
 	if err != nil {
@@ -168,7 +160,19 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed applying manifest: %w", err)
 	}
 
-	err = gitOpsDirWriter.AssociateCluster(ctx, cluster, configURL, installParams.Namespace, installParams.Namespace, installParams.AutoMerge, installParams.SkipFluxInstall)
+	gitClient, _, err = factory.GetGitClients(context.Background(), providerClient, services.GitConfigParams{
+		URL:       installParams.ConfigRepo,
+		Namespace: installParams.Namespace,
+		DryRun:    installParams.DryRun,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating git clients: %w", err)
+	}
+
+	repoWriter := gitrepo.NewRepoWriter(configURL, gitProvider, gitClient, log)
+	gitOpsDirWriter := gitopswriter.NewGitOpsDirectoryWriter(automationGen, repoWriter, osysClient, log)
+
+	err = gitOpsDirWriter.AssociateCluster(ctx, cluster, configURL, installParams.Namespace, installParams.Namespace, installParams.AutoMerge, installParams.SkipFluxInstall, repoBranch, manifests)
 	if err != nil {
 		return fmt.Errorf("failed associating cluster: %w", err)
 	}
@@ -177,12 +181,18 @@ func installRunCmd(cmd *cobra.Command, args []string) error {
 }
 
 func validateWegoInstall(ctx context.Context, kubeClient kube.Kube, params params) error {
-	status := kubeClient.GetClusterStatus(ctx)
-
-	if status == kube.FluxInstalled && !params.SkipFluxInstall {
-		return errors.New("There is a standalone installation of Flux in your cluster.\n\nTo avoid conflict you should either:\nSkip Flux installation:\n  $ gitops install --config-repo [config-repo] --skip-flux-install\n\nOr uninstall flux before proceeding:\n  $ flux uninstall")
+	fluxPresent, err := kubeClient.FluxPresent(ctx)
+	if err != nil {
+		return fmt.Errorf("failed checking flux presence: %w", err)
 	}
 
+	if fluxPresent {
+		if !params.SkipFluxInstall {
+			return errors.New("There is a standalone installation of Flux in your cluster.\n\nTo avoid conflict you should either:\nSkip Flux installation:\n  $ gitops install --config-repo [config-repo] --skip-flux-install\n\nOr uninstall flux before proceeding:\n  $ flux uninstall")
+		}
+	}
+
+	status := kubeClient.GetClusterStatus(ctx)
 	if status == kube.Unknown {
 		return errors.New("Weave GitOps cannot talk to the cluster")
 	}

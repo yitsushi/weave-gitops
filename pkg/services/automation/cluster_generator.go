@@ -68,18 +68,20 @@ type ClusterAutomationParams struct {
 }
 
 func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, params ClusterAutomationParams) (ClusterAutomation, error) {
-	secretRef, err := a.GetSecretRefForPrivateGitSources(ctx, params.ConfigURL)
+	secretRef, err := a.GetSecretRefForPrivateGitSources(ctx, params.ConfigURL, params.RepoVisibility)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}
 
 	secretStr := secretRef.String()
 
-	configBranch, err := a.GitProvider.GetDefaultBranch(ctx, params.ConfigURL)
-	if err != nil {
-		return ClusterAutomation{}, err
-	}
+	// configBranch, err := a.GitProvider.GetDefaultBranch(ctx, params.ConfigURL)
+	// if err != nil {
+	// 	return ClusterAutomation{}, err
+	// }
 
+	fmt.Println("-----------------------------------------------------------")
+	fmt.Println(params.Branch)
 	runtimeManifests, err := a.Flux.Install(params.Namespace, true)
 	if err != nil {
 		return ClusterAutomation{}, err
@@ -101,7 +103,7 @@ func (a *AutomationGen) GenerateClusterAutomation(ctx context.Context, params Cl
 
 	sourceName := createClusterSourceName(params.ConfigURL)
 
-	sourceManifest, err := a.Flux.CreateSourceGit(sourceName, params.ConfigURL, configBranch, secretStr, params.Namespace)
+	sourceManifest, err := a.Flux.CreateSourceGit(sourceName, params.ConfigURL, params.Branch, secretStr, params.Namespace)
 	if err != nil {
 		return ClusterAutomation{}, err
 	}

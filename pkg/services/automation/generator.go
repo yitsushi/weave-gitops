@@ -59,13 +59,13 @@ const (
 type AutomationGenerator interface {
 	GenerateApplicationAutomation(ctx context.Context, app models.Application, clusterName string) (ApplicationAutomation, error)
 	GenerateClusterAutomation(ctx context.Context, params ClusterAutomationParams) (ClusterAutomation, error)
-	GetSecretRefForPrivateGitSources(ctx context.Context, url gitproviders.RepoURL) (GeneratedSecretName, error)
+	GetSecretRefForPrivateGitSources(ctx context.Context, url gitproviders.RepoURL, visibility gitprovider.RepositoryVisibility) (GeneratedSecretName, error)
 }
 
 type AutomationGen struct {
-	GitProvider gitproviders.GitProvider
-	Flux        flux.Flux
-	Logger      logger.Logger
+	// GitProvider gitproviders.GitProvider
+	Flux   flux.Flux
+	Logger logger.Logger
 }
 
 var _ AutomationGenerator = &AutomationGen{}
@@ -90,29 +90,29 @@ func (s GeneratedSecretName) String() string {
 
 func NewAutomationGenerator(gp gitproviders.GitProvider, flux flux.Flux, logger logger.Logger) AutomationGenerator {
 	return &AutomationGen{
-		GitProvider: gp,
-		Flux:        flux,
-		Logger:      logger,
+		// GitProvider: gp,
+		Flux:   flux,
+		Logger: logger,
 	}
 }
 
 func (a *AutomationGen) getAppSecretRef(ctx context.Context, app models.Application) (GeneratedSecretName, error) {
 	if app.SourceType != models.SourceTypeHelm {
-		return a.GetSecretRefForPrivateGitSources(ctx, app.GitSourceURL)
+		return a.GetSecretRefForPrivateGitSources(ctx, app.GitSourceURL, app.RepoVisibility)
 	}
 
 	return "", nil
 }
 
-func (a *AutomationGen) GetSecretRefForPrivateGitSources(ctx context.Context, url gitproviders.RepoURL) (GeneratedSecretName, error) {
+func (a *AutomationGen) GetSecretRefForPrivateGitSources(ctx context.Context, url gitproviders.RepoURL, visibility gitprovider.RepositoryVisibility) (GeneratedSecretName, error) {
 	var secretRef GeneratedSecretName
 
-	visibility, err := a.GitProvider.GetRepoVisibility(ctx, url)
-	if err != nil {
-		return "", err
-	}
+	// visibility, err := a.GitProvider.GetRepoVisibility(ctx, url)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	if *visibility != gitprovider.RepositoryVisibilityPublic {
+	if visibility != gitprovider.RepositoryVisibilityPublic {
 		secretRef = CreateRepoSecretName(url)
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fluxcd/go-git-providers/gitprovider"
 	"github.com/weaveworks/weave-gitops/pkg/git"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 	"github.com/weaveworks/weave-gitops/pkg/kube"
@@ -69,7 +70,7 @@ func (a *AppSvc) Add(configGit git.Git, gitProvider gitproviders.GitProvider, pa
 		return err
 	}
 
-	app, err := makeApplication(params)
+	app, err := makeApplication(ctx, params, gitProvider)
 	if err != nil {
 		return err
 	}
@@ -226,11 +227,12 @@ func (a *AppSvc) addApp(ctx context.Context, configGit git.Git, gitProvider gitp
 	return gitOpsDirWriter.AddApplication(ctx, app, clusterName, autoMerge)
 }
 
-func makeApplication(params AddParams) (models.Application, error) {
+func makeApplication(ctx context.Context, params AddParams, gitProvider gitproviders.GitProvider) (models.Application, error) {
 	var (
 		gitSourceURL  gitproviders.RepoURL
 		helmSourceURL string
 		err           error
+		visibility    = gitprovider.RepositoryVisibilityVar(gitprovider.RepositoryVisibilityPrivate)
 	)
 
 	if models.SourceType(params.SourceType) == models.SourceTypeHelm {
@@ -239,6 +241,11 @@ func makeApplication(params AddParams) (models.Application, error) {
 		gitSourceURL, err = gitproviders.NewRepoURL(params.Url)
 		if err != nil {
 			return models.Application{}, err
+		}
+
+		visibility, err = gitProvider.GetRepoVisibility(ctx, gitSourceURL)
+		if err != nil {
+			return models.Application{}, fmt.Errorf("failed getting config repo visibility: %w", err)
 		}
 	}
 
@@ -264,6 +271,7 @@ func makeApplication(params AddParams) (models.Application, error) {
 		SourceType:          models.SourceType(params.SourceType),
 		AutomationType:      models.AutomationType(params.DeploymentType),
 		HelmTargetNamespace: params.HelmReleaseTargetNamespace,
+		RepoVisibility:      *visibility,
 	}
 
 	return app, nil

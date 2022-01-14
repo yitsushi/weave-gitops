@@ -29,7 +29,7 @@ var _ GitOpsDirectoryWriter = &gitOpsDirectoryWriterSvc{}
 type GitOpsDirectoryWriter interface {
 	AddApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
 	RemoveApplication(ctx context.Context, app models.Application, clusterName string, autoMerge bool) error
-	AssociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string, fluxNamespace string, autoMerge bool, createNamespace bool) error
+	AssociateCluster(ctx context.Context, cluster models.Cluster, configURL gitproviders.RepoURL, namespace string, fluxNamespace string, autoMerge bool, createNamespace bool, defaultBranch string, manifests []automation.AutomationManifest) error
 }
 
 type gitOpsDirectoryWriterSvc struct {
@@ -196,29 +196,29 @@ func (dw *gitOpsDirectoryWriterSvc) AssociateCluster(
 	namespace string,
 	fluxNamespace string,
 	autoMerge bool,
-	createNamespace bool) error {
-	auto, err := dw.Automation.GenerateClusterAutomation(ctx, automation.ClusterAutomationParams{
-		Cluster:         cluster,
-		ConfigURL:       configURL,
-		Namespace:       namespace,
-		CreateNamespace: createNamespace,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to generate cluster automation: %w", err)
-	}
+	createNamespace bool, defaultBranch string, manifests []automation.AutomationManifest) error {
+	// auto, err := dw.Automation.GenerateClusterAutomation(ctx, automation.ClusterAutomationParams{
+	// 	Cluster:         cluster,
+	// 	ConfigURL:       configURL,
+	// 	Namespace:       namespace,
+	// 	CreateNamespace: createNamespace,
+	// })
+	// if err != nil {
+	// 	return fmt.Errorf("failed to generate cluster automation: %w", err)
+	// }
 
-	wegoConfigManifest, err := auto.GenerateWegoConfigManifest(cluster.Name, fluxNamespace, namespace)
-	if err != nil {
-		return fmt.Errorf("failed generating wego config manifest %w", err)
-	}
+	// wegoConfigManifest, err := auto.GenerateWegoConfigManifest(cluster.Name, fluxNamespace, namespace)
+	// if err != nil {
+	// 	return fmt.Errorf("failed generating wego config manifest %w", err)
+	// }
 
-	manifests := auto.Manifests()
-	manifests = append(manifests, wegoConfigManifest)
+	// manifests := auto.Manifests()
+	// manifests = append(manifests, wegoConfigManifest)
 
-	defaultBranch, err := dw.RepoWriter.GetDefaultBranch(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve default branch for repository: %w", err)
-	}
+	// defaultBranch, err := dw.RepoWriter.GetDefaultBranch(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to retrieve default branch for repository: %w", err)
+	// }
 
 	// store a .keep file in the user dir
 	userKeep := automation.AutomationManifest{

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/fluxcd/go-git-providers/gitprovider"
 	"github.com/weaveworks/weave-gitops/pkg/gitproviders"
 )
 
@@ -27,6 +28,7 @@ type Application struct {
 	AutomationType      AutomationType
 	SourceType          SourceType
 	HelmTargetNamespace string
+	RepoVisibility      gitprovider.RepositoryVisibility
 }
 
 func IsExternalConfigRepo(url string) bool {
