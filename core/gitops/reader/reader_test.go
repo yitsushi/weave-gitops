@@ -1,4 +1,4 @@
-package app
+package reader
 
 import (
 	"testing"
@@ -17,9 +17,5 @@ func setUpFetcherTest(t *testing.T) fetcherFixture {
 }
 
 func TestAppRepoFetcher_Get(t *testing.T) {
-
-}
-
-func TestAppRepoFetcher_List(t *testing.T) {
 
 }

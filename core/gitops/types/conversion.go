@@ -31,7 +31,7 @@ func FileJsonToApps(files []source.FileJson) (map[string]App, error) {
 
 		app := apps[appName]
 
-		isAppFile := strings.HasSuffix(file.Path, appFilename)
+		isAppFile := strings.HasSuffix(file.Path, AppFilename)
 		if isAppFile {
 			var appResource v1alpha1.Application
 			err := mapstructure.Decode(file.Data, &appResource)
@@ -48,7 +48,7 @@ func FileJsonToApps(files []source.FileJson) (map[string]App, error) {
 			}
 
 			app.Namespace = kustomization.MetaData.Namespace
-			app.Id = kustomization.CommonLabels[gitopsLabel("app-id")]
+			app.Id = kustomization.CommonLabels[GitopsLabel("app-id")]
 		}
 
 		apps[appName] = app

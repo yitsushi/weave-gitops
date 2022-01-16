@@ -1,6 +1,7 @@
 package types
 
 import (
+	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -21,7 +22,7 @@ func setUpConversionTest(t *testing.T) appFixture {
 func TestConvertApp(t *testing.T) {
 	f := setUpConversionTest(t)
 	applicationFile := source.FileJson{
-		Path: appPath("app-1", appFilename),
+		Path: filepath.Join(AppPath("app-1"), AppFilename),
 		Data: map[string]interface{}{
 			"kind":       ApplicationKind,
 			"apiVersion": ApplicationVersion,
@@ -43,12 +44,12 @@ func TestConvertApp(t *testing.T) {
 			"namespace": testNamespace,
 		},
 		"commonLabels": map[string]string{
-			gitopsLabel("app-id"): "12345",
+			GitopsLabel("app-id"): "12345",
 		},
 	}
 
 	kustomizationFile := source.FileJson{
-		Path: appPath("app-1", kustomizationFilename),
+		Path: filepath.Join(AppPath("app-1"), KustomizationFilename),
 		Data: kustomization,
 	}
 

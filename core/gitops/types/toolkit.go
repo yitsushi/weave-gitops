@@ -113,7 +113,7 @@ func (gt GitopsToolkit) Files() ([]repository.File, error) {
 		return nil, fmt.Errorf("could not marsha gitops tookit %s into yaml: %w", gt.ClusterName, err)
 	}
 
-	files = append(files, repository.File{Path: filepath.Join(gt.SystemPath, kustomizationFilename), Data: kustomizeData})
+	files = append(files, repository.File{Path: filepath.Join(gt.SystemPath, KustomizationFilename), Data: kustomizeData})
 
 	return files, nil
 }

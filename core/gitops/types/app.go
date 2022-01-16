@@ -19,21 +19,16 @@ const (
 	ApplicationVersion = "gitops.weave.works/v1alpha1"
 
 	labelKey              = "gitops.weave.works"
-	appFilename           = "app.yaml"
-	kustomizationFilename = "kustomization.yaml"
-	metadataFilename      = "metadata.json"
-
-	idField          = "id"
-	descriptionField = "description"
-	versionField     = "version"
+	AppFilename           = "app.yaml"
+	KustomizationFilename = "kustomization.yaml"
 )
 
 var (
-	appPathPrefix = fmt.Sprintf("%s/apps/", BaseDir)
+	AppPathPrefix = fmt.Sprintf("%s/apps/", BaseDir)
 )
 
-func appPath(name, fileName string) string {
-	return fmt.Sprintf("%s/apps/%s/%s", BaseDir, name, fileName)
+func AppPath(name string) string {
+	return fmt.Sprintf("%s/%s", AppPathPrefix, name)
 }
 
 func currentPath(fileName string) string {
@@ -41,12 +36,12 @@ func currentPath(fileName string) string {
 }
 
 func isKustomizationFile(path string) bool {
-	if !strings.HasPrefix(path, appPathPrefix) {
+	if !strings.HasPrefix(path, AppPathPrefix) {
 		return false
 	}
 
 	slices := strings.Split(path, "/")
-	if len(slices) == 4 && slices[3] == kustomizationFilename {
+	if len(slices) == 4 && slices[3] == KustomizationFilename {
 		return true
 	} else {
 		return false
@@ -54,7 +49,7 @@ func isKustomizationFile(path string) bool {
 }
 
 func appNameFromPath(path string) string {
-	if !strings.HasPrefix(path, appPathPrefix) {
+	if !strings.HasPrefix(path, AppPathPrefix) {
 		return ""
 	}
 
@@ -67,7 +62,7 @@ func appNameFromPath(path string) string {
 }
 
 func fileNameFromPath(path string) string {
-	if !strings.HasPrefix(path, appPathPrefix) {
+	if !strings.HasPrefix(path, AppPathPrefix) {
 		return ""
 	}
 
@@ -79,7 +74,7 @@ func fileNameFromPath(path string) string {
 	}
 }
 
-func gitopsLabel(suffix string) string {
+func GitopsLabel(suffix string) string {
 	return fmt.Sprintf("%s/%s", labelKey, suffix)
 }
 
@@ -94,7 +89,7 @@ func NewAppKustomization(name, namespace string) types.Kustomization {
 			Namespace: namespace,
 		},
 		CommonLabels: map[string]string{
-			gitopsLabel("app-name"): name,
+			GitopsLabel("app-name"): name,
 		},
 	}
 
@@ -102,18 +97,18 @@ func NewAppKustomization(name, namespace string) types.Kustomization {
 }
 
 type App struct {
-	Id              string                              `json:"id"`
-	Name            string                              `json:"name"`
-	Namespace       string                              `json:"namespace"`
-	Description     string                              `json:"description"`
-	DisplayName     string                              `json:"displayName"`
-	kustomization   types.Kustomization                 `json:"kustomization"`
-	kustomizations  map[ObjectKey]v1beta2.Kustomization `json:"kustomizations"`
-	gitRepositories map[ObjectKey]v1beta1.GitRepository `json:"gitRepositories"`
+	Id              string
+	Name            string
+	Namespace       string
+	Description     string
+	DisplayName     string
+	kustomization   types.Kustomization
+	kustomizations  map[ObjectKey]v1beta2.Kustomization
+	gitRepositories map[ObjectKey]v1beta1.GitRepository
 }
 
 func (a *App) path() string {
-	return fmt.Sprintf("%s/apps/%s", BaseDir, a.Name)
+	return AppPath(a.Name)
 }
 
 func (a *App) AddFluxKustomization(kustomization v1beta2.Kustomization) {
@@ -144,7 +139,7 @@ func (a *App) CustomResource() v1alpha1.Application {
 	return v1alpha1.Application{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       ApplicationKind,
-			APIVersion: "gitops.weave.works/v1alpha1",
+			APIVersion: ApplicationVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.Name,
@@ -168,7 +163,7 @@ func (a *App) Files() ([]repository.File, error) {
 		return nil, fmt.Errorf("app %s marshal custom resource into yaml: %w", a.Name, err)
 	}
 
-	appFilePath := filepath.Join(a.path(), appFilename)
+	appFilePath := filepath.Join(a.path(), AppFilename)
 	files = append(files, repository.File{Path: appFilePath, Data: customResource})
 	paths = append(paths, currentPath(appFilePath))
 
@@ -201,7 +196,8 @@ func (a *App) Files() ([]repository.File, error) {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
 	}
 
-	kustFilePath := filepath.Join(a.path(), kustomizationFilename)
+	kustFilePath := filepath.Join(a.path(), KustomizationFilename)
+
 	files = append(files, repository.File{Path: kustFilePath, Data: kustomizeData})
 
 	return files, nil

@@ -1,56 +1,58 @@
 package kustomize
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
-	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type CreateInput struct {
-	Name        string
-	Namespace   string
-	Description string
-	DisplayName string
+	AppName       string
+	RepoName      string
+	Kustomization v1beta2.Kustomization
 }
 
 type Creator interface {
-	Create(repo *git.Repository, auth transport.AuthMethod, input CreateInput) (types.App, error)
+	Create(ctx context.Context, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error)
 }
 
-func NewCreator(committerSvc repository.Writer) Creator {
-	return &appCreator{
+func NewCreator(committerSvc repository.Writer, fetcher app.Fetcher) Creator {
+	return &kustomizeCreator{
 		committerSvc: committerSvc,
+		fetcher:      fetcher,
 	}
 }
 
-type appCreator struct {
+type kustomizeCreator struct {
 	committerSvc repository.Writer
+	fetcher      app.Fetcher
 }
 
-func (a appCreator) Create(repo *git.Repository, auth transport.AuthMethod, input CreateInput) (types.App, error) {
-	app := types.App{
-		Id:          string(uuid.NewUUID()),
-		Name:        input.Name,
-		Namespace:   input.Namespace,
-		Description: input.Description,
-		DisplayName: input.DisplayName,
+func (a kustomizeCreator) Create(ctx context.Context, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error) {
+	app, err := a.fetcher.Get(ctx, input.AppName, input.RepoName, types.FluxNamespace)
+	if err == types.ErrNotFound {
+		return v1beta2.Kustomization{}, err
+	} else if err != nil {
+		return v1beta2.Kustomization{}, fmt.Errorf("kustServer.Add: %w")
 	}
 
 	files, err := app.Files()
 	if err != nil {
-		return types.App{}, fmt.Errorf("issue creating app files: %w", err)
+		return v1beta2.Kustomization{}, fmt.Errorf("kustomizeCreate: issue creating app files: %w", err)
 	}
 
-	commitMessage := fmt.Sprintf("Created new app: %s", app.Name)
+	commitMessage := fmt.Sprintf("Created new kustomization: %s", app.Name)
 
 	_, err = a.committerSvc.Commit(repo, auth, commitMessage, files)
 	if err != nil {
-		return types.App{}, fmt.Errorf("git writer failed for app: %w", err)
+		return v1beta2.Kustomization{}, fmt.Errorf("git writer failed for app: %w", err)
 	}
 
-	return app, nil
+	return input.Kustomization, nil
 }

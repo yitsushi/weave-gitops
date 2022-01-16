@@ -84,9 +84,6 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 	}
 
 	// download the tarball
-	//parsedUrl, _ := url.Parse(repo.GetArtifact().URL)
-	//parsedUrl.Host = "localhost:8082"
-	fmt.Println("This is James")
 	req, err := http.NewRequest(http.MethodGet, repo.GetArtifact().URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request, error: %w", err)
@@ -143,22 +140,20 @@ func (gr *defaultService) GetArtifact(ctx context.Context, name, namespace strin
 
 		if include {
 			data := bytes.NewBuffer([]byte(nil))
-			//fmt.Printf("Contents of %s: ", header.Name)
 			if _, err := io.Copy(data, tr); err != nil {
 				return nil, err
 			}
 
 			jsonData, err := yaml.YAMLToJSON(data.Bytes())
 			if err != nil {
-				fmt.Printf("AN ERROR OCCURRED CONVERTING TO YAML")
-				return nil, err
+				return nil, fmt.Errorf("an error occurred converting to yaml: %w", err)
 			}
 
 			var obj map[string]interface{}
+
 			err = json.Unmarshal(jsonData, &obj)
 			if err != nil {
-				fmt.Printf("AN ERROR OCCURRED CONVERTING TO JSON")
-				return nil, err
+				return nil, fmt.Errorf("an error occurred unmarshalling to json: %w", err)
 			}
 
 			delta = append(delta, FileJson{

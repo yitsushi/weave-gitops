@@ -25,16 +25,18 @@ type appServer struct {
 
 	creator     app.Creator
 	fetcher     app.Fetcher
+	repoFetcher app.RepoFetcher
 	remover     app.Remover
 	repoManager repository.Manager
 	sourceSvc   source.Service
 }
 
-func NewAppServer(creator app.Creator, fetcher app.Fetcher, remover app.Remover, sourceSvc source.Service, repoManager repository.Manager) pb.AppsServer {
+func NewAppServer(creator app.Creator, fetcher app.Fetcher, repoFetcher app.RepoFetcher, remover app.Remover, sourceSvc source.Service, repoManager repository.Manager) pb.AppsServer {
 	return &appServer{
 		creator:     creator,
 		fetcher:     fetcher,
 		remover:     remover,
+		repoFetcher: repoFetcher,
 		repoManager: repoManager,
 		sourceSvc:   sourceSvc,
 	}
@@ -72,8 +74,26 @@ func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddApp
 	}, nil
 }
 
+//func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {
+//	app, err := a.fetcher.Get(context.Background(), msg.AppName, msg.RepoName, types.FluxNamespace)
+//	if err == types.ErrNotFound {
+//		return nil, status.Error(codes.NotFound, err.Error())
+//	} else if err != nil {
+//		return nil, status.Error(codes.Internal, err.Error())
+//	}
+//
+//	return &pb.GetAppResponse{App: newProtoApp(app)}, nil
+//}
+
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {
-	app, err := a.fetcher.Get(context.Background(), msg.AppName, msg.RepoName, types.FluxNamespace)
+	dir, err := a.repoManager.GetTempDir("test");
+	if err == repository.ErrBranchDoesNotExist {
+		return nil, status.Errorf(codes.NotFound, "branch does not exist")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get temp dir")
+	}
+
+	app, err := a.repoFetcher.Get(dir, msg.AppName, msg.RepoName)
 	if err == types.ErrNotFound {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {

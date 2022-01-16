@@ -1,6 +1,7 @@
 package types
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
@@ -104,12 +105,11 @@ func TestAppFiles_Success(t *testing.T) {
 	files, err := app.Files()
 	f.Expect(err).To(BeNil())
 	f.Expect(len(files)).To(Equal(2))
-	f.Expect(files[0].Path).To(Equal(app.path(appFilename)))
-	f.Expect(files[1].Path).To(Equal(app.path(kustomizationFilename)))
+	f.Expect(files[0].Path).To(Equal(filepath.Join(app.path(), AppFilename)))
+	f.Expect(files[1].Path).To(Equal(filepath.Join(app.path(), KustomizationFilename)))
 
 	expectedKustomize := NewAppKustomization("my-app", testNamespace)
 	expectedKustomize.Resources = []string{files[0].Path}
 	expectedData, _ := yaml.Marshal(expectedKustomize)
 	f.Expect(files[1].Data).To(Equal(expectedData))
-
 }
