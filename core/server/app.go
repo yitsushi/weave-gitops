@@ -86,14 +86,14 @@ func (a *appServer) AddApp(_ context.Context, msg *pb.AddAppRequest) (*pb.AddApp
 //}
 
 func (a *appServer) GetApp(_ context.Context, msg *pb.GetAppRequest) (*pb.GetAppResponse, error) {
-	dir, err := a.repoManager.GetTempDir("test");
+	dir, err := a.repoManager.GetTempDir("test")
 	if err == repository.ErrBranchDoesNotExist {
 		return nil, status.Errorf(codes.NotFound, "branch does not exist")
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get temp dir")
 	}
 
-	app, err := a.repoFetcher.Get(dir, msg.AppName, msg.RepoName)
+	app, err := a.repoFetcher.Get(dir, msg.AppName)
 	if err == types.ErrNotFound {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {

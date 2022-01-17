@@ -19,17 +19,21 @@ func (e ErrInvalidPath) Error() string {
 	return fmt.Sprintf("invalid path for file %s", e.path)
 }
 
-func appNameFromPath(path string) string {
-	if !strings.HasPrefix(path, types.AppPathPrefix) {
-		return ""
+func appNameFromPath(dir, path string) string {
+	if strings.HasSuffix(dir, types.AppPathPrefix) {
+		slices := strings.Split(path, "/")
+
+		if len(slices) > 0 {
+			return slices[0]
+		}
+	} else {
+		slices := strings.Split(dir, "/")
+		if len(slices) > 0 {
+			return slices[len(slices)-1]
+		}
 	}
 
-	slices := strings.Split(path, "/")
-	if len(slices) >= 3 {
-		return slices[2]
-	} else {
-		return ""
-	}
+	return ""
 }
 
 func isKustomizationFile(path string) bool {
@@ -49,16 +53,11 @@ type App interface {
 	Read(paths []string) (map[string]types.App, error)
 }
 
-func ReadApps(fileSystem fs.FS, paths []string) (map[string]types.App, error) {
+func ReadApps(fileSystem fs.FS, dir string, paths []string) (map[string]types.App, error) {
 	apps := map[string]types.App{}
 
 	for _, path := range paths {
-
-		if !strings.HasPrefix(path, types.AppPathPrefix) {
-			return nil, ErrInvalidPath{path: path}
-		}
-
-		appName := appNameFromPath(path)
+		appName := appNameFromPath(dir, path)
 		if appName == "" {
 			continue
 		}

@@ -12,19 +12,6 @@ import (
 
 // TODO: Make sure we can read multiple yamls out of a single file
 
-//type OpenStub struct {
-//	readers map[string]fstest.MapFile
-//	err     error
-//}
-//
-//func (o OpenStub) Open(name string) (fs.File, error) {
-//	if o.err != nil {
-//		return nil, o.err
-//	}
-//
-//	return o.readers[name], nil
-//}
-
 var (
 	appYaml = fmt.Sprintf(`
 apiVersion: %s

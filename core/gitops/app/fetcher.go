@@ -73,8 +73,8 @@ type RepoFetcher interface {
 	List(dir string) ([]types.App, error)
 }
 
-func NewRepoFetcher() Fetcher {
-	return &appSourceFetcher{}
+func NewRepoFetcher() RepoFetcher {
+	return &appRepoFetcher{}
 }
 
 type appRepoFetcher struct {
@@ -109,12 +109,13 @@ func (a appRepoFetcher) List(dir string) ([]types.App, error) {
 
 func readApps(dir string) (map[string]types.App, error) {
 	var paths []string
+
 	fileSystem := os.DirFS(dir)
-	if err := fs.WalkDir(fileSystem, dir, reader.WalkDir(&paths)); err != nil {
+	if err := fs.WalkDir(fileSystem, ".", reader.WalkDir(&paths)); err != nil {
 		return nil, fmt.Errorf("readApps walking directory: %w", err)
 	}
 
-	if appsMap, err := reader.ReadApps(fileSystem, paths); err != nil {
+	if appsMap, err := reader.ReadApps(fileSystem, dir, paths); err != nil {
 		return nil, fmt.Errorf("readApps reading files: %w", err)
 	} else {
 		return appsMap, nil
