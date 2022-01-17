@@ -36,16 +36,21 @@ func appNameFromPath(dir, path string) string {
 	return ""
 }
 
-func isKustomizationFile(path string) bool {
-	if !strings.HasPrefix(path, types.AppPathPrefix) {
-		return false
-	}
-
+func parentAppFolder(dir, path string) bool {
 	slices := strings.Split(path, "/")
-	if len(slices) == 4 && slices[3] == types.KustomizationFilename {
-		return true
+	if strings.HasSuffix(dir, types.AppPathPrefix) {
+		return len(slices) == 2
 	} else {
-		return false
+		return len(slices) == 1
+	}
+}
+
+func isKustomizationFile(dir, path string) bool {
+	slices := strings.Split(path, "/")
+	if strings.HasSuffix(dir, types.AppPathPrefix) {
+		return len(slices) == 2 && slices[1] == types.KustomizationFilename
+	} else {
+		return len(slices) == 1 && slices[0] == types.KustomizationFilename
 	}
 }
 
@@ -84,7 +89,8 @@ func ReadApps(fileSystem fs.FS, dir string, paths []string) (map[string]types.Ap
 			}
 
 			app.Description = appResource.Spec.Description
-		} else if isKustomizationFile(path) {
+			app.DisplayName = appResource.Spec.DisplayName
+		} else if isKustomizationFile(dir, path) {
 			var kustomization k8types.Kustomization
 			err := mapstructure.Decode(data, &kustomization)
 			if err != nil {
