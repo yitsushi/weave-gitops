@@ -102,7 +102,7 @@ type App struct {
 	Namespace       string
 	Description     string
 	DisplayName     string
-	kustomization   types.Kustomization
+	Kustomization   types.Kustomization
 	kustomizations  map[ObjectKey]v1beta2.Kustomization
 	gitRepositories map[ObjectKey]v1beta1.GitRepository
 }
@@ -115,6 +115,7 @@ func (a *App) AddFluxKustomization(kustomization v1beta2.Kustomization) {
 	if a.kustomizations == nil {
 		a.kustomizations = map[ObjectKey]v1beta2.Kustomization{}
 	}
+
 	a.kustomizations[NewObjectKey(kustomization.ObjectMeta)] = kustomization
 }
 
@@ -127,6 +128,7 @@ func (a *App) AddGitRepository(gitRepo v1beta1.GitRepository) {
 	if a.gitRepositories == nil {
 		a.gitRepositories = map[ObjectKey]v1beta1.GitRepository{}
 	}
+
 	a.gitRepositories[NewObjectKey(gitRepo.ObjectMeta)] = gitRepo
 }
 
@@ -164,6 +166,7 @@ func (a *App) Files() ([]repository.File, error) {
 	}
 
 	appFilePath := filepath.Join(a.path(), AppFilename)
+
 	files = append(files, repository.File{Path: appFilePath, Data: customResource})
 	paths = append(paths, currentPath(appFilePath))
 
@@ -185,13 +188,13 @@ func (a *App) Files() ([]repository.File, error) {
 		}
 	}
 
-	if a.kustomization.MetaData == nil {
-		a.kustomization = NewAppKustomization(a.Name, a.Namespace)
+	if a.Kustomization.MetaData == nil {
+		a.Kustomization = NewAppKustomization(a.Name, a.Namespace)
 	}
 
-	a.kustomization.Resources = append(a.kustomization.Resources, paths...)
+	a.Kustomization.Resources = append(a.Kustomization.Resources, paths...)
 
-	kustomizeData, err := yaml.Marshal(a.kustomization)
+	kustomizeData, err := yaml.Marshal(a.Kustomization)
 	if err != nil {
 		return nil, fmt.Errorf("app %s marshal kustomization into yaml: %w", a.Name, err)
 	}

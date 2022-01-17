@@ -15,14 +15,14 @@ type Installer interface {
 }
 
 type gitopsInstall struct {
-	appVersion   string
-	committerSvc repository.Writer
+	appVersion string
+	writer     repository.Writer
 }
 
-func NewGitopsInstaller(adder repository.Writer, version string) Installer {
+func NewGitopsInstaller(writer repository.Writer, version string) Installer {
 	return &gitopsInstall{
-		appVersion:   version,
-		committerSvc: adder,
+		appVersion: version,
+		writer:     writer,
 	}
 }
 
@@ -49,7 +49,7 @@ func (gi gitopsInstall) Install(repo *git.Repository, auth transport.AuthMethod,
 
 		files = append(files, systemFiles...)
 
-		_, err = gi.committerSvc.Commit(repo, auth, fmt.Sprintf("Installed Weave GitOps in %s", toolkit.ClusterName), files)
+		_, err = gi.writer.Commit(repo, auth, fmt.Sprintf("Installed Weave GitOps in %s", toolkit.ClusterName), files)
 		if err != nil {
 			return fmt.Errorf("there was an issue creating a commit: %w", err)
 		}

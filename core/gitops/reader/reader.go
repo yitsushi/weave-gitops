@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 
+	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/yaml"
 )
 
@@ -32,4 +33,24 @@ func readJsonOrYamlFile(fileSystem fs.FS, path string) (map[string]interface{}, 
 	}
 
 	return obj, nil
+}
+
+func readKustomizationFile(fileSystem fs.FS, path string) (types.Kustomization, error) {
+	r, err := fileSystem.Open(path)
+	if err != nil {
+		return types.Kustomization{}, fmt.Errorf("cannot open file %s: %w", path, err)
+	}
+
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return types.Kustomization{}, fmt.Errorf("error reading file: %w", err)
+	}
+
+	var kust types.Kustomization
+	err = yaml.Unmarshal(data, &kust)
+	if err != nil {
+		return types.Kustomization{}, fmt.Errorf("error unmarshaling k8s kustomization file: %w", err)
+	}
+
+	return kust, nil
 }

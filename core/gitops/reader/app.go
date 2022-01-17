@@ -8,7 +8,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
-	k8types "sigs.k8s.io/kustomize/api/types"
 )
 
 type ErrInvalidPath struct {
@@ -75,12 +74,12 @@ func ReadApps(fileSystem fs.FS, dir string, paths []string) (map[string]types.Ap
 
 		app := apps[appName]
 
+		isAppFile := strings.HasSuffix(path, types.AppFilename)
 		data, err := readJsonOrYamlFile(fileSystem, path)
 		if err != nil {
 			return nil, fmt.Errorf("read apps error reading file %s: %w", path, err)
 		}
 
-		isAppFile := strings.HasSuffix(path, types.AppFilename)
 		if isAppFile {
 			var appResource v1alpha1.Application
 			err := mapstructure.Decode(data, &appResource)
@@ -91,14 +90,14 @@ func ReadApps(fileSystem fs.FS, dir string, paths []string) (map[string]types.Ap
 			app.Description = appResource.Spec.Description
 			app.DisplayName = appResource.Spec.DisplayName
 		} else if isKustomizationFile(dir, path) {
-			var kustomization k8types.Kustomization
-			err := mapstructure.Decode(data, &kustomization)
+			kustomization, err := readKustomizationFile(fileSystem, path)
 			if err != nil {
-				return nil, fmt.Errorf("could not decode kustomization file into struct: %w", err)
+				return nil, fmt.Errorf("ReadApps read kustomization file: %w", err)
 			}
 
 			app.Namespace = kustomization.MetaData.Namespace
 			app.Id = kustomization.CommonLabels[types.GitopsLabel("app-id")]
+			app.Kustomization = kustomization
 		}
 
 		apps[appName] = app
