@@ -8,10 +8,10 @@ import CommitsTable from "../components/CommitsTable";
 import ConditionsTable from "../components/ConditionsTable";
 import ErrorPage from "../components/ErrorPage";
 import GithubDeviceAuthModal from "../components/GithubDeviceAuthModal";
+import GraphExperiment from "../components/GraphExperiment";
 import KeyValueTable from "../components/KeyValueTable";
 import LoadingPage from "../components/LoadingPage";
 import Page, { Content } from "../components/Page";
-import ReconciliationGraph from "../components/ReconciliationGraph";
 import Spacer from "../components/Spacer";
 import { AppContext } from "../contexts/AppContext";
 import CallbackStateContextProvider from "../contexts/CallbackStateContext";
@@ -159,6 +159,7 @@ function ApplicationDetail({ className, name }: Props) {
             Remove App
           </Button>
         </ActionBar>
+        <GraphExperiment />
         <KeyValueTable
           columns={4}
           pairs={[
@@ -168,11 +169,11 @@ function ApplicationDetail({ className, name }: Props) {
             { key: "Path", value: application.path },
           ]}
         />
-        <ReconciliationGraph
+        {/* <ReconciliationGraph
           objects={reconciledObjects}
           parentObject={application}
           parentObjectKind="Application"
-        />
+        /> */}
         <h3>Source Conditions</h3>
         <ConditionsTable conditions={application.source?.conditions} />
         <h3>Automation Conditions</h3>
