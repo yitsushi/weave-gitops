@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,6 +44,7 @@ type Cache interface {
 	// GetProfileValues will try and find a specific values file for the given profileName and profileVersion. Returns an
 	// error if said version is not found.
 	GetProfileValues(ctx context.Context, helmRepoNamespace, helmRepoName, profileName, profileVersion string) ([]byte, error)
+	GetVersionsForProfile(ctx context.Context, helmRepoNamespace, helmRepoName, profileName string) ([]string, error)
 }
 
 // Data is explicit data for a specific profile including values.
@@ -153,6 +155,24 @@ func (c *ProfileCache) ListProfiles(ctx context.Context, helmRepoNamespace, helm
 
 	if err := c.tryWithLock(ctx, listOperation); err != nil {
 		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetVersionsForProfile returns all stored versions for a profile.
+func (c *ProfileCache) GetVersionsForProfile(ctx context.Context, helmRepoNamespace, helmRepoName, profileName string) ([]string, error) {
+	dirs, err := ioutil.ReadDir(filepath.Join(c.cacheLocation, helmRepoNamespace, helmRepoName, profileName))
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+
+	for _, f := range dirs {
+		if f.IsDir() {
+			result = append(result, f.Name())
+		}
 	}
 
 	return result, nil
