@@ -5,7 +5,6 @@ import (
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/source-controller/api/v1beta1"
-	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/kustomize"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
@@ -27,8 +26,8 @@ func protoToKustomization(kustomization *pb.AddKustomizationRequest) v1beta2.Kus
 			Namespace: kustomization.Namespace,
 		},
 		Spec: v1beta2.KustomizationSpec{
-			Path:     kustomization.Path,
-			Interval: intervalDuration(kustomization.Interval),
+			Path: kustomization.Path,
+			//Interval: intervalDuration(kustomization.Interval),
 			SourceRef: v1beta2.CrossNamespaceSourceReference{
 				Kind: kustomization.SourceRef.Kind.String(),
 				Name: kustomization.Name,
@@ -66,15 +65,13 @@ type kustServer struct {
 	pb.UnimplementedAppKustomizationServer
 
 	creator     kustomize.Creator
-	fetcher     app.Fetcher
 	repoManager repository.Manager
 	sourceSvc   source.Service
 }
 
-func NewKustomizationServer(creator kustomize.Creator, fetcher app.Fetcher, sourceSvc source.Service, repoManager repository.Manager) pb.AppKustomizationServer {
+func NewKustomizationServer(creator kustomize.Creator, sourceSvc source.Service, repoManager repository.Manager) pb.AppKustomizationServer {
 	return &kustServer{
 		creator:     creator,
-		fetcher:     fetcher,
 		repoManager: repoManager,
 		sourceSvc:   sourceSvc,
 	}
@@ -83,18 +80,24 @@ func NewKustomizationServer(creator kustomize.Creator, fetcher app.Fetcher, sour
 func (ks *kustServer) Add(ctx context.Context, msg *pb.AddKustomizationRequest) (*pb.AddKustomizationResponse, error) {
 	repo, key, err := getRepo(ks.sourceSvc, ks.repoManager, msg.RepoName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "kustServer.Add: %w", err)
+		return nil, status.Errorf(codes.Internal, "kustServer.Add: %s", err.Error())
 	}
 
-	k, err := ks.creator.Create(ctx, repo, key, kustomize.CreateInput{
+	dir, err := ks.repoManager.GetTempDir("test")
+	if err == repository.ErrBranchDoesNotExist {
+		return nil, status.Errorf(codes.NotFound, "branch does not exist")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get temp dir")
+	}
+
+	k, err := ks.creator.Create(dir, repo, key, kustomize.CreateInput{
 		AppName:       msg.AppName,
-		RepoName:      msg.RepoName,
 		Kustomization: protoToKustomization(msg),
 	})
 	if err == types.ErrNotFound {
 		return nil, status.Error(codes.NotFound, "resource does not exist")
 	} else if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to create kustomization: %w", err)
+		return nil, status.Errorf(codes.Internal, "unable to create kustomization: %s", err.Error())
 	}
 
 	return &pb.AddKustomizationResponse{
@@ -103,22 +106,6 @@ func (ks *kustServer) Add(ctx context.Context, msg *pb.AddKustomizationRequest) 
 	}, nil
 }
 
-func (ks *kustServer) Remove(ctx context.Context, msg *pb.RemoveKustomizationRequest) (*pb.RemoveKustomizationResponse, error) {
-	//repo, key, err := getRepo(ks.sourceSvc, ks.repoManager, msg.RepoName)
-	//if err != nil {
-	//	return nil, status.Errorf(codes.Internal, "kustServer.Remove: %w", err)
-	//}
-	//
-	//app, err := ks.fetcher.Get(ctx, msg.AppName, msg.RepoName, types.FluxNamespace)
-	//if err == types.ErrNotFound {
-	//	return nil, status.Error(codes.NotFound, "resource does not exist")
-	//} else if err != nil {
-	//	return nil, fmt.Errorf("kustServer.Add: %w")
-	//}
-	//
-	//return &pb.RemoveKustomizationResponse{
-	//	Success: true,
-	//}, nil
-
-	return nil, nil
+func (ks *kustServer) Remove(_ context.Context, msg *pb.RemoveKustomizationRequest) (*pb.RemoveKustomizationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "")
 }

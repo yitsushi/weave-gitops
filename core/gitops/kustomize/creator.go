@@ -1,7 +1,6 @@
 package kustomize
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
@@ -14,42 +13,41 @@ import (
 
 type CreateInput struct {
 	AppName       string
-	RepoName      string
 	Kustomization v1beta2.Kustomization
 }
 
 type Creator interface {
-	Create(ctx context.Context, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error)
+	Create(dir string, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error)
 }
 
-func NewCreator(committerSvc repository.Writer, fetcher app.Fetcher) Creator {
+func NewCreator(writer repository.Writer, fetcher app.RepoFetcher) Creator {
 	return &kustomizeCreator{
-		committerSvc: committerSvc,
-		fetcher:      fetcher,
+		writer:      writer,
+		repoFetcher: fetcher,
 	}
 }
 
 type kustomizeCreator struct {
-	committerSvc repository.Writer
-	fetcher      app.Fetcher
+	writer      repository.Writer
+	repoFetcher app.RepoFetcher
 }
 
-func (a kustomizeCreator) Create(ctx context.Context, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error) {
-	app, err := a.fetcher.Get(ctx, input.AppName, input.RepoName, types.FluxNamespace)
+func (a kustomizeCreator) Create(dir string, repo *git.Repository, auth transport.AuthMethod, input CreateInput) (v1beta2.Kustomization, error) {
+	app, err := a.repoFetcher.Get(dir, input.AppName)
 	if err == types.ErrNotFound {
 		return v1beta2.Kustomization{}, err
 	} else if err != nil {
-		return v1beta2.Kustomization{}, fmt.Errorf("kustServer.Add: %w")
+		return v1beta2.Kustomization{}, fmt.Errorf("kustServer.Add: %w", err)
 	}
 
-	files, err := app.Files()
+	files, err := app.AddFluxKustomization(input.Kustomization)
 	if err != nil {
 		return v1beta2.Kustomization{}, fmt.Errorf("kustomizeCreate: issue creating app files: %w", err)
 	}
 
-	commitMessage := fmt.Sprintf("Created new kustomization: %s", app.Name)
+	commitMessage := fmt.Sprintf("New kustomization %s in app %s", input.Kustomization.ObjectMeta.Name, app.Name)
 
-	_, err = a.committerSvc.Commit(repo, auth, commitMessage, files)
+	_, err = a.writer.Commit(repo, auth, commitMessage, files)
 	if err != nil {
 		return v1beta2.Kustomization{}, fmt.Errorf("git writer failed for app: %w", err)
 	}

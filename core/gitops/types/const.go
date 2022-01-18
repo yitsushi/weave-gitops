@@ -8,5 +8,6 @@ const (
 )
 
 var (
-	ErrNotFound = errors.New("entity not found")
+	ErrNotFound        = errors.New("entity not found")
+	ErrUnsupportedKind = errors.New("unsupported k8s kind")
 )

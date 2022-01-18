@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	AppPathPrefix = fmt.Sprintf("%s/apps/", BaseDir)
+	AppPathPrefix = fmt.Sprintf("%s/apps", BaseDir)
 )
 
 func AppPath(name string) string {
@@ -61,19 +61,6 @@ func appNameFromPath(path string) string {
 	}
 }
 
-func fileNameFromPath(path string) string {
-	if !strings.HasPrefix(path, AppPathPrefix) {
-		return ""
-	}
-
-	slices := strings.Split(path, "/")
-	if len(slices) >= 3 {
-		return slices[len(slices)-1]
-	} else {
-		return ""
-	}
-}
-
 func GitopsLabel(suffix string) string {
 	return fmt.Sprintf("%s/%s", labelKey, suffix)
 }
@@ -97,44 +84,123 @@ func NewAppKustomization(name, namespace string) types.Kustomization {
 }
 
 type App struct {
-	Id              string
-	Name            string
-	Namespace       string
-	Description     string
-	DisplayName     string
-	Kustomization   types.Kustomization
-	kustomizations  map[ObjectKey]v1beta2.Kustomization
-	gitRepositories map[ObjectKey]v1beta1.GitRepository
+	Id               string
+	Name             string
+	Namespace        string
+	Description      string
+	DisplayName      string
+	Kustomization    types.Kustomization
+	buckets          map[ObjectKey]v1beta1.Bucket
+	kustomizations   map[ObjectKey]v1beta2.Kustomization
+	gitRepositories  map[ObjectKey]v1beta1.GitRepository
+	helmRepositories map[ObjectKey]v1beta1.HelmRepository
 }
 
 func (a *App) path() string {
 	return AppPath(a.Name)
 }
 
-func (a *App) AddFluxKustomization(kustomization v1beta2.Kustomization) {
+func (a *App) AddBucketSource(bucket v1beta1.Bucket) ([]repository.File, error) {
+	if a.buckets == nil {
+		a.buckets = map[ObjectKey]v1beta1.Bucket{}
+	}
+
+	objectKey := NewObjectKey(bucket.ObjectMeta)
+	a.buckets[objectKey] = bucket
+
+	file, err := bucketSourceFile(a.path(), bucket)
+	if err != nil {
+		return nil, fmt.Errorf("app.GetFiles bucket: %w", err)
+	}
+
+	a.Kustomization.Resources = append(a.Kustomization.Resources, componentFileName(objectKey, v1beta1.BucketKind))
+	kustFile, err := kustomizationFile(a.path(), a.Kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddBucketSource create bucket file: %w", err)
+	}
+
+	return []repository.File{
+		file,
+		kustFile,
+	}, nil
+}
+
+func (a *App) AddFluxKustomization(kustomization v1beta2.Kustomization) ([]repository.File, error) {
 	if a.kustomizations == nil {
 		a.kustomizations = map[ObjectKey]v1beta2.Kustomization{}
 	}
 
-	a.kustomizations[NewObjectKey(kustomization.ObjectMeta)] = kustomization
+	objectKey := NewObjectKey(kustomization.ObjectMeta)
+	a.kustomizations[objectKey] = kustomization
+
+	a.Kustomization.Resources = append(a.Kustomization.Resources, componentFileName(objectKey, v1beta2.KustomizationKind))
+
+	file, err := fluxKustomizationFile(a.path(), kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddFluxKustomization create flux kustomizaiton file: %w", err)
+	}
+
+	kustFile, err := kustomizationFile(a.path(), a.Kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddFluxKustomization create kustomizaiton file: %w", err)
+	}
+
+	return []repository.File{
+		file,
+		kustFile,
+	}, nil
 }
 
-func (a *App) GetFluxKustomization(key ObjectKey) (v1beta2.Kustomization, bool) {
-	k, ok := a.kustomizations[key]
-	return k, ok
-}
-
-func (a *App) AddGitRepository(gitRepo v1beta1.GitRepository) {
+func (a *App) AddGitRepository(gitRepo v1beta1.GitRepository) ([]repository.File, error) {
 	if a.gitRepositories == nil {
 		a.gitRepositories = map[ObjectKey]v1beta1.GitRepository{}
 	}
 
-	a.gitRepositories[NewObjectKey(gitRepo.ObjectMeta)] = gitRepo
+	objectKey := NewObjectKey(gitRepo.ObjectMeta)
+	a.gitRepositories[objectKey] = gitRepo
+
+	a.Kustomization.Resources = append(a.Kustomization.Resources, componentFileName(objectKey, v1beta1.GitRepositoryKind))
+
+	file, err := gitRepositoryFile(a.path(), gitRepo)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddGitRepository create git repository file: %w", err)
+	}
+
+	kustFile, err := kustomizationFile(a.path(), a.Kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddGitRepository create kustomizaiton file: %w", err)
+	}
+
+	return []repository.File{
+		file,
+		kustFile,
+	}, nil
 }
 
-func (a *App) GetGitRepository(key ObjectKey) (v1beta1.GitRepository, bool) {
-	gr, ok := a.gitRepositories[key]
-	return gr, ok
+func (a *App) AddHelmRepository(helmRepo v1beta1.HelmRepository) ([]repository.File, error) {
+	if a.helmRepositories == nil {
+		a.helmRepositories = map[ObjectKey]v1beta1.HelmRepository{}
+	}
+
+	objectKey := NewObjectKey(helmRepo.ObjectMeta)
+	a.helmRepositories[objectKey] = helmRepo
+
+	a.Kustomization.Resources = append(a.Kustomization.Resources, componentFileName(objectKey, v1beta1.HelmRepositoryKind))
+
+	file, err := helmRepositoryFile(a.path(), helmRepo)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddHelmRepository create helm repository file: %w", err)
+	}
+
+	kustFile, err := kustomizationFile(a.path(), a.Kustomization)
+	if err != nil {
+		return nil, fmt.Errorf("app.AddHelmRepository create kustomizaiton file: %w", err)
+	}
+
+	return []repository.File{
+		file,
+		kustFile,
+	}, nil
 }
 
 func (a *App) CustomResource() v1alpha1.Application {
@@ -180,7 +246,7 @@ func (a *App) Files() ([]repository.File, error) {
 	}
 
 	for _, v := range a.kustomizations {
-		if file, err := kustomizationFile(a.path(), v); err != nil {
+		if file, err := fluxKustomizationFile(a.path(), v); err != nil {
 			return nil, fmt.Errorf("app files: %w", err)
 		} else {
 			files = append(files, file)

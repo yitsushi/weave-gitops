@@ -80,13 +80,14 @@ func TestApp_AddAndGetKustomization(t *testing.T) {
 
 	f.Expect(app.kustomizations).To(HaveLen(2))
 
-	k, ok := app.GetFluxKustomization(ObjectKey{Name: "kust-1", Namespace: "extra-namespace"})
-	f.Expect(ok).To(BeTrue())
-	f.Expect(k).To(Equal(kust2))
+	//k, ok := app.GetFluxKustomization(ObjectKey{Name: "kust-1", Namespace: "extra-namespace"})
+	//f.Expect(ok).To(BeTrue())
+	//f.Expect(k).To(Equal(kust2))
+	//
+	//k3, ok := app.GetFluxKustomization(ObjectKey{Name: "fake-kust", Namespace: "bad-robot"})
+	//f.Expect(ok).To(BeFalse())
+	//f.Expect(k3).To(Equal(v1beta2.Kustomization{}))
 
-	k3, ok := app.GetFluxKustomization(ObjectKey{Name: "fake-kust", Namespace: "bad-robot"})
-	f.Expect(ok).To(BeFalse())
-	f.Expect(k3).To(Equal(v1beta2.Kustomization{}))
 }
 
 func TestApp_KustomizationFiles(t *testing.T) {

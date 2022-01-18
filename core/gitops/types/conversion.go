@@ -10,10 +10,6 @@ import (
 	"sigs.k8s.io/kustomize/api/types"
 )
 
-func FileJsonToRepo(objects []source.FileJson) Repo {
-	return Repo{}
-}
-
 func FileJsonToApps(files []source.FileJson) (map[string]App, error) {
 	apps := map[string]App{}
 

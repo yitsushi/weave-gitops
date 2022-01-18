@@ -3,19 +3,23 @@ package types
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/fluxcd/source-controller/api/v1beta1"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"sigs.k8s.io/yaml"
 )
 
-func objectPath(prefixPath, name, namespace, kind string) string {
-	fileName := fmt.Sprintf("%s-%s-%s.yaml", name, namespace, kind)
-	return filepath.Join(prefixPath, fileName)
+func componentFileName(ok ObjectKey, kind string) string {
+	return fmt.Sprintf("%s-%s-%s.yaml", ok.Name, ok.Namespace, strings.ToLower(kind))
+}
+
+func componentFilePath(prefixPath string, ok ObjectKey, kind string) string {
+	return filepath.Join(prefixPath, componentFileName(ok, kind))
 }
 
 func bucketSourceFile(prefixPath string, b v1beta1.Bucket) (repository.File, error) {
-	filePath := objectPath(prefixPath, b.ObjectMeta.Name, b.ObjectMeta.Namespace, v1beta1.BucketKind)
+	filePath := componentFilePath(prefixPath, NewObjectKey(b.ObjectMeta), v1beta1.BucketKind)
 	data, err := yaml.Marshal(b)
 	if err != nil {
 		return repository.File{}, fmt.Errorf("unable to marshal bucket source %s/%s: %w", b.ObjectMeta.Name, b.ObjectMeta.Namespace, err)
@@ -25,7 +29,7 @@ func bucketSourceFile(prefixPath string, b v1beta1.Bucket) (repository.File, err
 }
 
 func gitRepositoryFile(prefixPath string, gr v1beta1.GitRepository) (repository.File, error) {
-	filePath := objectPath(prefixPath, gr.ObjectMeta.Name, gr.ObjectMeta.Namespace, v1beta1.GitRepositoryKind)
+	filePath := componentFilePath(prefixPath, NewObjectKey(gr.ObjectMeta), v1beta1.GitRepositoryKind)
 	data, err := yaml.Marshal(gr)
 	if err != nil {
 		return repository.File{}, fmt.Errorf("unable to marshal git repository %s/%s: %w", gr.ObjectMeta.Name, gr.ObjectMeta.Namespace, err)
@@ -35,7 +39,7 @@ func gitRepositoryFile(prefixPath string, gr v1beta1.GitRepository) (repository.
 }
 
 func helmRepositoryFile(prefixPath string, hr v1beta1.HelmRepository) (repository.File, error) {
-	filePath := objectPath(prefixPath, hr.ObjectMeta.Name, hr.ObjectMeta.Namespace, v1beta1.HelmRepositoryKind)
+	filePath := componentFilePath(prefixPath, NewObjectKey(hr.ObjectMeta), v1beta1.HelmRepositoryKind)
 
 	data, err := yaml.Marshal(hr)
 	if err != nil {

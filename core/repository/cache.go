@@ -22,6 +22,10 @@ var (
 	ErrBranchDoesNotExist = errors.New("branch does not exist")
 )
 
+func init() {
+	localCache = map[string]localRepo{}
+}
+
 type localRepo struct {
 	dir  string
 	repo *git.Repository
@@ -67,6 +71,7 @@ func (rm *repoManager) Get(ctx context.Context, auth transport.AuthMethod, sourc
 	// TODO: the temp dir is never removed
 	rm.cacheMutex.Lock()
 	defer rm.cacheMutex.Unlock()
+
 	localCache[branch] = localRepo{
 		dir:  repoDir,
 		repo: repo,

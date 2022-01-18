@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/add"
+	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/create"
 	"github.com/weaveworks/weave-gitops/cmd/gitops/beta/cmd/get"
 )
 
@@ -34,6 +35,7 @@ func init() {
 
 	Cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	Cmd.AddCommand(add.GetCommand())
+	Cmd.AddCommand(create.GetCommand())
 	Cmd.AddCommand(get.GetCommand())
 }
 

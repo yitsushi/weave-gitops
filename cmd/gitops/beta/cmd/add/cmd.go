@@ -10,11 +10,11 @@ func GetCommand() *cobra.Command {
 		Use:   "add",
 		Short: "Add a new Weave GitOps resource",
 		Example: `
-# Add an application to gitops from local git repository
-gitops add app . --name <app-name>`,
+# Add a Flux Kustomization to an app from local git repository
+gitops add kustomization <kust-name> --app <app-name>`,
 	}
 
-	cmd.AddCommand(app.AppCmd)
+	cmd.AddCommand(app.KustomizationCmd)
 
 	return cmd
 }

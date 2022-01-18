@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
+	"github.com/weaveworks/weave-gitops/core/gitops/kustomize"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"github.com/weaveworks/weave-gitops/core/source"
@@ -35,9 +36,15 @@ func Hydrate(ctx context.Context, mux *runtime.ServeMux) error {
 	deleterSvc := repository.NewGitDeleter(true)
 	appRemover := app.NewRemover(deleterSvc, appFetcher)
 
-	newAppServer := NewAppServer(appCreator, appFetcher, appRepoFetcher, appRemover, sourceSvc, repoManager)
-	if err := pb.RegisterAppsHandlerServer(ctx, mux, newAppServer); err != nil {
-		return fmt.Errorf("could not register new app: %w", err)
+	appsServer := NewAppServer(appCreator, appFetcher, appRepoFetcher, appRemover, sourceSvc, repoManager)
+	if err := pb.RegisterAppsHandlerServer(ctx, mux, appsServer); err != nil {
+		return fmt.Errorf("could not register new app server: %w", err)
+	}
+
+	kustCreator := kustomize.NewCreator(writerSvc, appRepoFetcher)
+	kustServer := NewKustomizationServer(kustCreator, sourceSvc, repoManager)
+	if err := pb.RegisterAppKustomizationHandlerServer(ctx, mux, kustServer); err != nil {
+		return fmt.Errorf("could not register new kustomization server: %w", err)
 	}
 
 	return nil
