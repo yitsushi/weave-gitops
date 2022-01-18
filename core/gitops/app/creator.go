@@ -1,13 +1,16 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/weaveworks/weave-gitops/api/v1alpha1"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/rest"
 )
 
 type CreateInput struct {
@@ -51,6 +54,41 @@ func (a appCreator) Create(repo *git.Repository, auth transport.AuthMethod, inpu
 	if err != nil {
 		return types.App{}, fmt.Errorf("git writer failed for app: %w", err)
 	}
+
+	return app, nil
+}
+
+type KubeCreator interface {
+	Create(ctx context.Context, client *rest.RESTClient, input CreateInput) (v1alpha1.Application, error)
+}
+
+func NewKubeCreator() Creator {
+
+}
+
+type appKubeCreator struct {
+	committerSvc repository.Writer
+}
+
+func (a appKubeCreator) Create(ctx context.Context, client *rest.RESTClient, input CreateInput) (types.App, error) {
+	app := types.App{
+		Id:          string(uuid.NewUUID()),
+		Name:        input.Name,
+		Namespace:   input.Namespace,
+		Description: input.Description,
+		DisplayName: input.DisplayName,
+	}
+
+	cr := app.CustomResource()
+
+	result := &v1alpha1.Application{}
+	client.Post().
+		Namespace(cr.Namespace).
+		Resource("application").
+		Name(input.Name).
+		Body(cr).
+		Do(ctx).
+		Into(result)
 
 	return app, nil
 }
