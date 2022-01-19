@@ -28,8 +28,8 @@ const (
 
 // EventRecorder defines an external event recorder's function for creating events for the notification controller.
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-//counterfeiter:generate -o . . EventRecorder
-type EventRecorder interface {
+//counterfeiter:generate . eventRecorder
+type eventRecorder interface {
 	Eventf(object corev1.ObjectReference, metadata map[string]string, severity, reason string, messageFmt string, args ...interface{}) error
 }
 
@@ -38,7 +38,7 @@ type HelmWatcherReconciler struct {
 	client.Client
 	Cache                 cache.Cache
 	RepoManager           helm.HelmRepoManager
-	ExternalEventRecorder EventRecorder
+	ExternalEventRecorder eventRecorder
 	Scheme                *runtime.Scheme
 }
 

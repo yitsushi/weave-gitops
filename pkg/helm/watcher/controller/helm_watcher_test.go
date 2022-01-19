@@ -19,6 +19,7 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/helm/helmfakes"
 	"github.com/weaveworks/weave-gitops/pkg/helm/watcher/cache"
 	"github.com/weaveworks/weave-gitops/pkg/helm/watcher/cache/cachefakes"
+	"github.com/weaveworks/weave-gitops/pkg/helm/watcher/controller/controllerfakes"
 )
 
 var (
@@ -220,7 +221,7 @@ func TestNotifyForGreaterVersion(t *testing.T) {
 	fakeCache := &cachefakes.FakeCache{}
 	fakeRepoManager := &helmfakes.FakeHelmRepoManager{}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(repo1)
-	fakeEventRecorder := &FakeEventRecorder{}
+	fakeEventRecorder := &controllerfakes.FakeEventRecorder{}
 
 	fakeRepoManager.ListChartsReturns([]*pb.Profile{profile1, profile2}, nil)
 	fakeRepoManager.GetValuesFileReturns([]byte("value"), nil)
