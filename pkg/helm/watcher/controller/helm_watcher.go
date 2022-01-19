@@ -27,6 +27,8 @@ const (
 )
 
 // EventRecorder defines an external event recorder's function for creating events for the notification controller.
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+//counterfeiter:generate -o . . EventRecorder
 type EventRecorder interface {
 	Eventf(object corev1.ObjectReference, metadata map[string]string, severity, reason string, messageFmt string, args ...interface{}) error
 }
@@ -72,8 +74,6 @@ func (r *HelmWatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if repository.Status.Artifact == nil {
-		// This should not occur because the predicate already checks for artifact's existence, but we do this as a
-		// precaution in case that was circumvented.
 		return ctrl.Result{}, nil
 	}
 
@@ -90,13 +90,13 @@ func (r *HelmWatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	for _, chart := range charts {
 		if v, err := r.checkForNewVersion(ctx, chart); err != nil {
-			log.Error(err, "failed to get if more recent version is available for profile")
+			log.Error(err, "checking for new versions failed")
 		} else if v != "" {
+			log.Info("sending notification event for new version", "version", v)
 			r.event(ctx, &repository, repository.Status.Artifact.Revision, "info", fmt.Sprintf("New version available for profile %s with version %s", chart.Name, v))
 		}
 
 		for _, v := range chart.AvailableVersions {
-			// what happens when there are no values? We should just skip that version...
 			valueBytes, err := r.RepoManager.GetValuesFile(context.Background(), &repository, &helm.ChartReference{
 				Chart:   chart.Name,
 				Version: v,
@@ -104,7 +104,7 @@ func (r *HelmWatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 			if err != nil {
 				log.Error(err, "failed to get values for chart and version, skipping...", "chart", chart.Name, "version", v)
-				// log and skip version
+				// log error and skip version
 				continue
 			}
 
@@ -188,7 +188,7 @@ func (r *HelmWatcherReconciler) event(ctx context.Context, hr *sourcev1.HelmRepo
 // compared to what's already stored in the cache. It returns the LATEST version which is greater than
 // the last version that was stored.
 func (r *HelmWatcherReconciler) checkForNewVersion(ctx context.Context, chart *pb.Profile) (string, error) {
-	versions, err := r.Cache.GetVersionsForProfile(ctx, chart.GetHelmRepository().GetNamespace(), chart.GetHelmRepository().GetName(), chart.Name)
+	versions, err := r.Cache.GetAvailableVersionsForProfile(ctx, chart.GetHelmRepository().GetNamespace(), chart.GetHelmRepository().GetName(), chart.Name)
 	if err != nil {
 		return "", err
 	}
@@ -204,13 +204,24 @@ func (r *HelmWatcherReconciler) checkForNewVersion(ctx context.Context, chart *p
 	}
 
 	sort.SliceStable(newVersions, func(i, j int) bool {
-		return newVersions[j].GreaterThan(newVersions[j])
+		return newVersions[i].GreaterThan(newVersions[j])
 	})
 
 	sort.SliceStable(oldVersions, func(i, j int) bool {
-		return oldVersions[j].GreaterThan(oldVersions[j])
+		return oldVersions[i].GreaterThan(oldVersions[j])
 	})
 
+	// If there are no old versions stored ( unlikely ), we notify that there are new ones available.
+	if len(oldVersions) == 0 && len(newVersions) != 0 {
+		return newVersions[0].String(), nil
+	}
+
+	// If there are no new versions ( unlikely ), we don't do anything.
+	if len(newVersions) == 0 {
+		return "", nil
+	}
+
+	// Notify in case the latest new version is greater than the latest old version.
 	if newVersions[0].GreaterThan(oldVersions[0]) {
 		return newVersions[0].String(), nil
 	}

@@ -23,6 +23,22 @@ type FakeCache struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetAvailableVersionsForProfileStub        func(context.Context, string, string, string) ([]string, error)
+	getAvailableVersionsForProfileMutex       sync.RWMutex
+	getAvailableVersionsForProfileArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+	}
+	getAvailableVersionsForProfileReturns struct {
+		result1 []string
+		result2 error
+	}
+	getAvailableVersionsForProfileReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
 	GetProfileValuesStub        func(context.Context, string, string, string, string) ([]byte, error)
 	getProfileValuesMutex       sync.RWMutex
 	getProfileValuesArgsForCall []struct {
@@ -38,22 +54,6 @@ type FakeCache struct {
 	}
 	getProfileValuesReturnsOnCall map[int]struct {
 		result1 []byte
-		result2 error
-	}
-	GetVersionsForProfileStub        func(context.Context, string, string, string) ([]string, error)
-	getVersionsForProfileMutex       sync.RWMutex
-	getVersionsForProfileArgsForCall []struct {
-		arg1 context.Context
-		arg2 string
-		arg3 string
-		arg4 string
-	}
-	getVersionsForProfileReturns struct {
-		result1 []string
-		result2 error
-	}
-	getVersionsForProfileReturnsOnCall map[int]struct {
-		result1 []string
 		result2 error
 	}
 	ListProfilesStub        func(context.Context, string, string) ([]*profiles.Profile, error)
@@ -152,6 +152,73 @@ func (fake *FakeCache) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeCache) GetAvailableVersionsForProfile(arg1 context.Context, arg2 string, arg3 string, arg4 string) ([]string, error) {
+	fake.getAvailableVersionsForProfileMutex.Lock()
+	ret, specificReturn := fake.getAvailableVersionsForProfileReturnsOnCall[len(fake.getAvailableVersionsForProfileArgsForCall)]
+	fake.getAvailableVersionsForProfileArgsForCall = append(fake.getAvailableVersionsForProfileArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetAvailableVersionsForProfileStub
+	fakeReturns := fake.getAvailableVersionsForProfileReturns
+	fake.recordInvocation("GetAvailableVersionsForProfile", []interface{}{arg1, arg2, arg3, arg4})
+	fake.getAvailableVersionsForProfileMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeCache) GetAvailableVersionsForProfileCallCount() int {
+	fake.getAvailableVersionsForProfileMutex.RLock()
+	defer fake.getAvailableVersionsForProfileMutex.RUnlock()
+	return len(fake.getAvailableVersionsForProfileArgsForCall)
+}
+
+func (fake *FakeCache) GetAvailableVersionsForProfileCalls(stub func(context.Context, string, string, string) ([]string, error)) {
+	fake.getAvailableVersionsForProfileMutex.Lock()
+	defer fake.getAvailableVersionsForProfileMutex.Unlock()
+	fake.GetAvailableVersionsForProfileStub = stub
+}
+
+func (fake *FakeCache) GetAvailableVersionsForProfileArgsForCall(i int) (context.Context, string, string, string) {
+	fake.getAvailableVersionsForProfileMutex.RLock()
+	defer fake.getAvailableVersionsForProfileMutex.RUnlock()
+	argsForCall := fake.getAvailableVersionsForProfileArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeCache) GetAvailableVersionsForProfileReturns(result1 []string, result2 error) {
+	fake.getAvailableVersionsForProfileMutex.Lock()
+	defer fake.getAvailableVersionsForProfileMutex.Unlock()
+	fake.GetAvailableVersionsForProfileStub = nil
+	fake.getAvailableVersionsForProfileReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCache) GetAvailableVersionsForProfileReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.getAvailableVersionsForProfileMutex.Lock()
+	defer fake.getAvailableVersionsForProfileMutex.Unlock()
+	fake.GetAvailableVersionsForProfileStub = nil
+	if fake.getAvailableVersionsForProfileReturnsOnCall == nil {
+		fake.getAvailableVersionsForProfileReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.getAvailableVersionsForProfileReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCache) GetProfileValues(arg1 context.Context, arg2 string, arg3 string, arg4 string, arg5 string) ([]byte, error) {
 	fake.getProfileValuesMutex.Lock()
 	ret, specificReturn := fake.getProfileValuesReturnsOnCall[len(fake.getProfileValuesArgsForCall)]
@@ -216,73 +283,6 @@ func (fake *FakeCache) GetProfileValuesReturnsOnCall(i int, result1 []byte, resu
 	}
 	fake.getProfileValuesReturnsOnCall[i] = struct {
 		result1 []byte
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeCache) GetVersionsForProfile(arg1 context.Context, arg2 string, arg3 string, arg4 string) ([]string, error) {
-	fake.getVersionsForProfileMutex.Lock()
-	ret, specificReturn := fake.getVersionsForProfileReturnsOnCall[len(fake.getVersionsForProfileArgsForCall)]
-	fake.getVersionsForProfileArgsForCall = append(fake.getVersionsForProfileArgsForCall, struct {
-		arg1 context.Context
-		arg2 string
-		arg3 string
-		arg4 string
-	}{arg1, arg2, arg3, arg4})
-	stub := fake.GetVersionsForProfileStub
-	fakeReturns := fake.getVersionsForProfileReturns
-	fake.recordInvocation("GetVersionsForProfile", []interface{}{arg1, arg2, arg3, arg4})
-	fake.getVersionsForProfileMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeCache) GetVersionsForProfileCallCount() int {
-	fake.getVersionsForProfileMutex.RLock()
-	defer fake.getVersionsForProfileMutex.RUnlock()
-	return len(fake.getVersionsForProfileArgsForCall)
-}
-
-func (fake *FakeCache) GetVersionsForProfileCalls(stub func(context.Context, string, string, string) ([]string, error)) {
-	fake.getVersionsForProfileMutex.Lock()
-	defer fake.getVersionsForProfileMutex.Unlock()
-	fake.GetVersionsForProfileStub = stub
-}
-
-func (fake *FakeCache) GetVersionsForProfileArgsForCall(i int) (context.Context, string, string, string) {
-	fake.getVersionsForProfileMutex.RLock()
-	defer fake.getVersionsForProfileMutex.RUnlock()
-	argsForCall := fake.getVersionsForProfileArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
-}
-
-func (fake *FakeCache) GetVersionsForProfileReturns(result1 []string, result2 error) {
-	fake.getVersionsForProfileMutex.Lock()
-	defer fake.getVersionsForProfileMutex.Unlock()
-	fake.GetVersionsForProfileStub = nil
-	fake.getVersionsForProfileReturns = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeCache) GetVersionsForProfileReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.getVersionsForProfileMutex.Lock()
-	defer fake.getVersionsForProfileMutex.Unlock()
-	fake.GetVersionsForProfileStub = nil
-	if fake.getVersionsForProfileReturnsOnCall == nil {
-		fake.getVersionsForProfileReturnsOnCall = make(map[int]struct {
-			result1 []string
-			result2 error
-		})
-	}
-	fake.getVersionsForProfileReturnsOnCall[i] = struct {
-		result1 []string
 		result2 error
 	}{result1, result2}
 }
@@ -422,10 +422,10 @@ func (fake *FakeCache) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
+	fake.getAvailableVersionsForProfileMutex.RLock()
+	defer fake.getAvailableVersionsForProfileMutex.RUnlock()
 	fake.getProfileValuesMutex.RLock()
 	defer fake.getProfileValuesMutex.RUnlock()
-	fake.getVersionsForProfileMutex.RLock()
-	defer fake.getVersionsForProfileMutex.RUnlock()
 	fake.listProfilesMutex.RLock()
 	defer fake.listProfilesMutex.RUnlock()
 	fake.putMutex.RLock()
