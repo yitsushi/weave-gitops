@@ -1,6 +1,7 @@
 package kustomize
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
@@ -9,6 +10,11 @@ import (
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
+	"k8s.io/client-go/rest"
+)
+
+const (
+	kustomizations = "kustomizations"
 )
 
 type CreateInput struct {
@@ -53,4 +59,28 @@ func (a kustomizeCreator) Create(dir string, repo *git.Repository, auth transpor
 	}
 
 	return input.Kustomization, nil
+}
+
+type KubeCreator interface {
+	Create(ctx context.Context, client *rest.RESTClient, kustomization *v1beta2.Kustomization) (result *v1beta2.Kustomization, err error)
+}
+
+func NewK8sCreator() KubeCreator {
+	return &kustomizationCreator{}
+}
+
+type kustomizationCreator struct {
+}
+
+func (a kustomizationCreator) Create(ctx context.Context, client *rest.RESTClient, kustomization *v1beta2.Kustomization) (result *v1beta2.Kustomization, err error) {
+	result = &v1beta2.Kustomization{}
+	err = client.Post().
+		Namespace(kustomization.ObjectMeta.Namespace).
+		Resource(kustomizations).
+		Name(kustomization.ObjectMeta.Name).
+		Body(kustomization).
+		Do(ctx).
+		Into(result)
+
+	return
 }

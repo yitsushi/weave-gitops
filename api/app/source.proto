@@ -4,6 +4,22 @@ package gitops_server.v1;
 
 option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
 
+message Interval {
+  int64 hours = 1;
+  int64 minutes = 2;
+  int64 seconds = 3;
+}
+
+message SourceRef {
+  enum Kind {
+    GitRepository = 0;
+    Bucket = 1;
+    HelmRepository = 2;
+  };
+  Kind kind = 1;
+  string name = 2;
+}
+
 message Artifact {
   string checksum = 1;
   int32 lastupdateat = 2;
@@ -47,4 +63,37 @@ message Source {
   string secretRefName = 11;
   repeated Condition conditions = 12;
   Artifact artifact = 13;
+}
+
+message GitRepository {
+  string namespace = 1;
+  string name = 2;
+  string url = 3;
+  GitRepositoryRef reference = 4;
+  string secretRef = 5;
+  Interval interval = 6;
+}
+
+message AddGitRepositoryReq {
+  string namespace = 1;
+  string app_name = 2;
+  string name = 3;
+  string url = 4;
+  GitRepositoryRef reference = 5;
+  string secret_ref = 6;
+  Interval interval = 7;
+}
+
+message AddGitRepositoryRes {
+  bool success = 1;
+  GitRepository git_repository = 2;
+}
+
+message ListGitRepositoryReq {
+  string namespace = 1;
+  string app_name = 2;
+}
+
+message ListGitRepositoryRes {
+  repeated GitRepository git_repositories = 1;
 }

@@ -7,7 +7,7 @@
   },
   "tags": [
     {
-      "name": "AppKustomization"
+      "name": "Flux"
     }
   ],
   "consumes": [
@@ -17,15 +17,15 @@
     "apps/json"
   ],
   "paths": {
-    "/v1/repo/{repoName}/app/{appName}/kustomization": {
-      "post": {
-        "summary": "AddKustomization adds a Kustomization to a cluster via GitOps.",
-        "operationId": "AppKustomization_Add",
+    "/v1/namespace/{namespace}/gitrepository": {
+      "get": {
+        "summary": "ListGitRepository lists git repositories from a cluster.",
+        "operationId": "Flux_ListGitRepositories",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1AddKustomizationResponse"
+              "$ref": "#/definitions/v1ListGitRepositoryRes"
             }
           },
           "default": {
@@ -37,13 +37,42 @@
         },
         "parameters": [
           {
-            "name": "repoName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
             "name": "appName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Flux"
+        ]
+      },
+      "post": {
+        "summary": "AddGitRepository adds a git repository source to a cluster.",
+        "operationId": "Flux_AddGitRepository",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddGitRepositoryRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -55,10 +84,104 @@
             "schema": {
               "type": "object",
               "properties": {
+                "appName": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
-                "namespace": {
+                "url": {
+                  "type": "string"
+                },
+                "reference": {
+                  "$ref": "#/definitions/v1GitRepositoryRef"
+                },
+                "secretRef": {
+                  "type": "string"
+                },
+                "interval": {
+                  "$ref": "#/definitions/v1Interval"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "Flux"
+        ]
+      }
+    },
+    "/v1/namespace/{namespace}/kustomization": {
+      "get": {
+        "summary": "ListKustomizations lists kustomization from a cluster.",
+        "operationId": "Flux_ListKustomizations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListKustomizationsRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Flux"
+        ]
+      },
+      "post": {
+        "summary": "AddKustomization adds a Kustomization to a cluster.",
+        "operationId": "Flux_AddKustomization",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddKustomizationRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "appName": {
+                  "type": "string"
+                },
+                "name": {
                   "type": "string"
                 },
                 "path": {
@@ -75,19 +198,19 @@
           }
         ],
         "tags": [
-          "AppKustomization"
+          "Flux"
         ]
       }
     },
-    "/v1/repo/{repoName}/app/{appName}/kustomization/{kustomizationName}": {
+    "/v1/namespace/{namespace}/kustomization/{kustomizationName}": {
       "delete": {
-        "summary": "RemoveKustomization removes a Kustomization from a cluster via GitOps.",
-        "operationId": "AppKustomization_Remove",
+        "summary": "RemoveKustomization removes a Kustomization from a cluster.",
+        "operationId": "Flux_RemoveKustomization",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1RemoveKustomizationResponse"
+              "$ref": "#/definitions/v1RemoveKustomizationRes"
             }
           },
           "default": {
@@ -99,13 +222,7 @@
         },
         "parameters": [
           {
-            "name": "repoName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "appName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -121,12 +238,17 @@
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "appName": {
+                  "type": "string"
+                }
+              }
             }
           }
         ],
         "tags": [
-          "AppKustomization"
+          "Flux"
         ]
       }
     }
@@ -170,7 +292,18 @@
         }
       }
     },
-    "v1AddKustomizationResponse": {
+    "v1AddGitRepositoryRes": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "gitRepository": {
+          "$ref": "#/definitions/v1GitRepository"
+        }
+      }
+    },
+    "v1AddKustomizationRes": {
       "type": "object",
       "properties": {
         "success": {
@@ -178,6 +311,46 @@
         },
         "kustomization": {
           "$ref": "#/definitions/v1Kustomization"
+        }
+      }
+    },
+    "v1GitRepository": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "reference": {
+          "$ref": "#/definitions/v1GitRepositoryRef"
+        },
+        "secretRef": {
+          "type": "string"
+        },
+        "interval": {
+          "$ref": "#/definitions/v1Interval"
+        }
+      }
+    },
+    "v1GitRepositoryRef": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "semver": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
         }
       }
     },
@@ -201,10 +374,10 @@
     "v1Kustomization": {
       "type": "object",
       "properties": {
-        "name": {
+        "namespace": {
           "type": "string"
         },
-        "namespace": {
+        "name": {
           "type": "string"
         },
         "path": {
@@ -218,7 +391,29 @@
         }
       }
     },
-    "v1RemoveKustomizationResponse": {
+    "v1ListGitRepositoryRes": {
+      "type": "object",
+      "properties": {
+        "gitRepositories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1GitRepository"
+          }
+        }
+      }
+    },
+    "v1ListKustomizationsRes": {
+      "type": "object",
+      "properties": {
+        "kustomizations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Kustomization"
+          }
+        }
+      }
+    },
+    "v1RemoveKustomizationRes": {
       "type": "object",
       "properties": {
         "success": {

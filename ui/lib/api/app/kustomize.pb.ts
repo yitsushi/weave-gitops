@@ -5,62 +5,62 @@
 */
 
 import * as fm from "../applications/fetch.pb"
-
-export enum SourceRefKind {
-  GitRepository = "GitRepository",
-  Bucket = "Bucket",
-  HelmRepository = "HelmRepository",
-}
-
-export type Interval = {
-  hours?: string
-  minutes?: string
-  seconds?: string
-}
-
-export type SourceRef = {
-  kind?: SourceRefKind
-  name?: string
-}
-
+import * as Gitops_serverV1Source from "./source.pb"
 export type Kustomization = {
-  name?: string
   namespace?: string
+  name?: string
   path?: string
-  sourceRef?: SourceRef
-  interval?: Interval
+  sourceRef?: Gitops_serverV1Source.SourceRef
+  interval?: Gitops_serverV1Source.Interval
 }
 
-export type AddKustomizationRequest = {
-  repoName?: string
+export type AddKustomizationReq = {
+  namespace?: string
   appName?: string
   name?: string
-  namespace?: string
   path?: string
-  sourceRef?: SourceRef
-  interval?: Interval
+  sourceRef?: Gitops_serverV1Source.SourceRef
+  interval?: Gitops_serverV1Source.Interval
 }
 
-export type AddKustomizationResponse = {
+export type AddKustomizationRes = {
   success?: boolean
   kustomization?: Kustomization
 }
 
-export type RemoveKustomizationRequest = {
-  repoName?: string
+export type ListKustomizationsReq = {
+  namespace?: string
+  appName?: string
+}
+
+export type ListKustomizationsRes = {
+  kustomizations?: Kustomization[]
+}
+
+export type RemoveKustomizationReq = {
+  namespace?: string
   appName?: string
   kustomizationName?: string
 }
 
-export type RemoveKustomizationResponse = {
+export type RemoveKustomizationRes = {
   success?: boolean
 }
 
-export class AppKustomization {
-  static Add(req: AddKustomizationRequest, initReq?: fm.InitReq): Promise<AddKustomizationResponse> {
-    return fm.fetchReq<AddKustomizationRequest, AddKustomizationResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}/kustomization`, {...initReq, method: "POST", body: JSON.stringify(req)})
+export class Flux {
+  static AddKustomization(req: AddKustomizationReq, initReq?: fm.InitReq): Promise<AddKustomizationRes> {
+    return fm.fetchReq<AddKustomizationReq, AddKustomizationRes>(`/v1/namespace/${req["namespace"]}/kustomization`, {...initReq, method: "POST", body: JSON.stringify(req)})
   }
-  static Remove(req: RemoveKustomizationRequest, initReq?: fm.InitReq): Promise<RemoveKustomizationResponse> {
-    return fm.fetchReq<RemoveKustomizationRequest, RemoveKustomizationResponse>(`/v1/repo/${req["repoName"]}/app/${req["appName"]}/kustomization/${req["kustomizationName"]}`, {...initReq, method: "DELETE", body: JSON.stringify(req)})
+  static ListKustomizations(req: ListKustomizationsReq, initReq?: fm.InitReq): Promise<ListKustomizationsRes> {
+    return fm.fetchReq<ListKustomizationsReq, ListKustomizationsRes>(`/v1/namespace/${req["namespace"]}/kustomization?${fm.renderURLSearchParams(req, ["namespace"])}`, {...initReq, method: "GET"})
+  }
+  static RemoveKustomization(req: RemoveKustomizationReq, initReq?: fm.InitReq): Promise<RemoveKustomizationRes> {
+    return fm.fetchReq<RemoveKustomizationReq, RemoveKustomizationRes>(`/v1/namespace/${req["namespace"]}/kustomization/${req["kustomizationName"]}`, {...initReq, method: "DELETE", body: JSON.stringify(req)})
+  }
+  static AddGitRepository(req: Gitops_serverV1Source.AddGitRepositoryReq, initReq?: fm.InitReq): Promise<Gitops_serverV1Source.AddGitRepositoryRes> {
+    return fm.fetchReq<Gitops_serverV1Source.AddGitRepositoryReq, Gitops_serverV1Source.AddGitRepositoryRes>(`/v1/namespace/${req["namespace"]}/gitrepository`, {...initReq, method: "POST", body: JSON.stringify(req)})
+  }
+  static ListGitRepositories(req: Gitops_serverV1Source.ListGitRepositoryReq, initReq?: fm.InitReq): Promise<Gitops_serverV1Source.ListGitRepositoryRes> {
+    return fm.fetchReq<Gitops_serverV1Source.ListGitRepositoryReq, Gitops_serverV1Source.ListGitRepositoryRes>(`/v1/namespace/${req["namespace"]}/gitrepository?${fm.renderURLSearchParams(req, ["namespace"])}`, {...initReq, method: "GET"})
   }
 }

@@ -13,6 +13,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	apps = "apps"
+)
+
 type CreateInput struct {
 	Name        string
 	Namespace   string
@@ -59,36 +63,25 @@ func (a appCreator) Create(repo *git.Repository, auth transport.AuthMethod, inpu
 }
 
 type KubeCreator interface {
-	Create(ctx context.Context, client *rest.RESTClient, input CreateInput) (v1alpha1.Application, error)
+	Create(ctx context.Context, client *rest.RESTClient, app *v1alpha1.Application) (*v1alpha1.Application, error)
 }
 
-func NewKubeCreator() Creator {
-
+func NewKubeCreator() KubeCreator {
+	return &appKubeCreator{}
 }
 
 type appKubeCreator struct {
-	committerSvc repository.Writer
 }
 
-func (a appKubeCreator) Create(ctx context.Context, client *rest.RESTClient, input CreateInput) (types.App, error) {
-	app := types.App{
-		Id:          string(uuid.NewUUID()),
-		Name:        input.Name,
-		Namespace:   input.Namespace,
-		Description: input.Description,
-		DisplayName: input.DisplayName,
-	}
-
-	cr := app.CustomResource()
-
-	result := &v1alpha1.Application{}
-	client.Post().
-		Namespace(cr.Namespace).
-		Resource("application").
-		Name(input.Name).
-		Body(cr).
+func (a appKubeCreator) Create(ctx context.Context, client *rest.RESTClient, app *v1alpha1.Application) (result *v1alpha1.Application, err error) {
+	result = &v1alpha1.Application{}
+	err = client.Post().
+		Namespace(app.ObjectMeta.Namespace).
+		Resource(apps).
+		Name(app.ObjectMeta.Name).
+		Body(app).
 		Do(ctx).
 		Into(result)
 
-	return app, nil
+	return
 }

@@ -8,49 +8,43 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/weaveworks/weave-gitops/core/clientset"
 	"github.com/weaveworks/weave-gitops/core/gitops/app"
 	"github.com/weaveworks/weave-gitops/core/gitops/kustomize"
+	"github.com/weaveworks/weave-gitops/core/gitops/source"
 	"github.com/weaveworks/weave-gitops/core/gitops/types"
 	"github.com/weaveworks/weave-gitops/core/repository"
-	"github.com/weaveworks/weave-gitops/core/source"
+	srccontroller "github.com/weaveworks/weave-gitops/core/source"
 	pb "github.com/weaveworks/weave-gitops/pkg/api/app"
-	"github.com/weaveworks/weave-gitops/pkg/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Hydrate(ctx context.Context, mux *runtime.ServeMux) error {
-	k8sClient, err := kube.NewClient()
-	if err != nil {
-		return err
-	}
+	appKubeCreator := app.NewKubeCreator()
+	appFetcher := app.NewKubeAppFetcher()
 
-	sourceSvc := source.NewService(k8sClient, source.GitopsRuntimeExclusionList)
+	kustCreator := kustomize.NewK8sCreator()
+	kustFetcher := kustomize.NewKustomizationFetcher()
 
-	repoManager := repository.NewRepoManager()
+	sourceCreator := source.NewKubeCreator()
+	sourceFetcher := source.NewSourceFetcher()
 
-	writerSvc := repository.NewGitWriter(true)
-	appCreator := app.NewCreator(writerSvc)
-	appFetcher := app.NewFetcher(sourceSvc)
-	appRepoFetcher := app.NewRepoFetcher()
+	clientSet := clientset.NewClientSets()
 
-	deleterSvc := repository.NewGitDeleter(true)
-	appRemover := app.NewRemover(deleterSvc, appFetcher)
-
-	appsServer := NewAppServer(appCreator, appFetcher, appRepoFetcher, appRemover, sourceSvc, repoManager)
+	appsServer := NewAppServer(clientSet, appKubeCreator, kustCreator, sourceCreator, appFetcher, kustFetcher, sourceFetcher)
 	if err := pb.RegisterAppsHandlerServer(ctx, mux, appsServer); err != nil {
 		return fmt.Errorf("could not register new app server: %w", err)
 	}
 
-	kustCreator := kustomize.NewCreator(writerSvc, appRepoFetcher)
-	kustServer := NewKustomizationServer(kustCreator, sourceSvc, repoManager)
-	if err := pb.RegisterAppKustomizationHandlerServer(ctx, mux, kustServer); err != nil {
+	fluxServer := NewFluxServer(clientSet, kustCreator, sourceCreator, kustFetcher, sourceFetcher)
+	if err := pb.RegisterFluxHandlerServer(ctx, mux, fluxServer); err != nil {
 		return fmt.Errorf("could not register new kustomization server: %w", err)
 	}
 
 	return nil
 }
 
-func getRepo(sourceSvc source.Service, manager repository.Manager, repoName string) (*git.Repository, *ssh.PublicKeys, error) {
+func getRepo(sourceSvc srccontroller.Service, manager repository.Manager, repoName string) (*git.Repository, *ssh.PublicKeys, error) {
 	sourceRepo, err := sourceSvc.Get(context.Background(), repoName, types.FluxNamespace)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getRepo: unable to get config repo: %s", err.Error())

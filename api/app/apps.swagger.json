@@ -17,7 +17,7 @@
     "apps/json"
   ],
   "paths": {
-    "/v1/repo/{repoName}/app": {
+    "/v1/namespace/{namespace}/app": {
       "get": {
         "summary": "ListApplications returns the list of WeGo applications that the authenticated user has access to.",
         "operationId": "Apps_ListApps",
@@ -37,7 +37,7 @@
         },
         "parameters": [
           {
-            "name": "repoName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -66,7 +66,7 @@
         },
         "parameters": [
           {
-            "name": "repoName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -96,7 +96,7 @@
         ]
       }
     },
-    "/v1/repo/{repoName}/app/{appName}": {
+    "/v1/namespace/{namespace}/app/{appName}": {
       "get": {
         "summary": "GetApplication returns a given application",
         "operationId": "Apps_GetApp",
@@ -116,7 +116,7 @@
         },
         "parameters": [
           {
-            "name": "repoName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -133,7 +133,249 @@
         ]
       }
     },
-    "/v1/repo/{repoName}/app/{name}": {
+    "/v1/namespace/{namespace}/app/{appName}/gitrepository": {
+      "get": {
+        "summary": "ListGitRepository lists git repositories from a cluster.",
+        "operationId": "Apps_ListGitRepositories",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListGitRepositoryRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      },
+      "post": {
+        "summary": "AddGitRepository adds a git repository source to a cluster.",
+        "operationId": "Apps_AddGitRepository",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddGitRepositoryRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "reference": {
+                  "$ref": "#/definitions/v1GitRepositoryRef"
+                },
+                "secretRef": {
+                  "type": "string"
+                },
+                "interval": {
+                  "$ref": "#/definitions/v1Interval"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      }
+    },
+    "/v1/namespace/{namespace}/app/{appName}/kustomization": {
+      "get": {
+        "summary": "ListKustomization lists Kustomizations from a cluster via GitOps.",
+        "operationId": "Apps_ListKustomizations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListKustomizationsRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      },
+      "post": {
+        "summary": "AddKustomization adds a Kustomization to a cluster via GitOps.",
+        "operationId": "Apps_AddKustomization",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddKustomizationRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sourceRef": {
+                  "$ref": "#/definitions/v1SourceRef"
+                },
+                "interval": {
+                  "$ref": "#/definitions/v1Interval"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      }
+    },
+    "/v1/namespace/{namespace}/app/{appName}/kustomization/{kustomizationName}": {
+      "delete": {
+        "summary": "RemoveKustomization removes a Kustomization from a cluster via GitOps.",
+        "operationId": "Apps_RemoveKustomizations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemoveKustomizationRes"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "appName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kustomizationName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "Apps"
+        ]
+      }
+    },
+    "/v1/namespace/{namespace}/app/{name}": {
       "delete": {
         "summary": "RemoveApplication removes an Application from a cluster via GitOps.",
         "operationId": "Apps_RemoveApp",
@@ -153,7 +395,7 @@
         },
         "parameters": [
           {
-            "name": "repoName",
+            "name": "namespace",
             "in": "path",
             "required": true,
             "type": "string"
@@ -171,9 +413,6 @@
             "schema": {
               "type": "object",
               "properties": {
-                "namespace": {
-                  "type": "string"
-                },
                 "autoMerge": {
                   "type": "boolean"
                 }
@@ -188,6 +427,15 @@
     }
   },
   "definitions": {
+    "SourceRefKind": {
+      "type": "string",
+      "enum": [
+        "GitRepository",
+        "Bucket",
+        "HelmRepository"
+      ],
+      "default": "GitRepository"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -228,9 +476,34 @@
         }
       }
     },
+    "v1AddGitRepositoryRes": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "gitRepository": {
+          "$ref": "#/definitions/v1GitRepository"
+        }
+      }
+    },
+    "v1AddKustomizationRes": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "kustomization": {
+          "$ref": "#/definitions/v1Kustomization"
+        }
+      }
+    },
     "v1App": {
       "type": "object",
       "properties": {
+        "namespace": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },
@@ -238,9 +511,6 @@
           "type": "string"
         },
         "displayName": {
-          "type": "string"
-        },
-        "id": {
           "type": "string"
         }
       }
@@ -250,6 +520,83 @@
       "properties": {
         "app": {
           "$ref": "#/definitions/v1App"
+        }
+      }
+    },
+    "v1GitRepository": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "reference": {
+          "$ref": "#/definitions/v1GitRepositoryRef"
+        },
+        "secretRef": {
+          "type": "string"
+        },
+        "interval": {
+          "$ref": "#/definitions/v1Interval"
+        }
+      }
+    },
+    "v1GitRepositoryRef": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "semver": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Interval": {
+      "type": "object",
+      "properties": {
+        "hours": {
+          "type": "string",
+          "format": "int64"
+        },
+        "minutes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "seconds": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1Kustomization": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "$ref": "#/definitions/v1SourceRef"
+        },
+        "interval": {
+          "$ref": "#/definitions/v1Interval"
         }
       }
     },
@@ -264,11 +611,52 @@
         }
       }
     },
+    "v1ListGitRepositoryRes": {
+      "type": "object",
+      "properties": {
+        "gitRepositories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1GitRepository"
+          }
+        }
+      }
+    },
+    "v1ListKustomizationsRes": {
+      "type": "object",
+      "properties": {
+        "kustomizations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Kustomization"
+          }
+        }
+      }
+    },
     "v1RemoveAppResponse": {
       "type": "object",
       "properties": {
         "success": {
           "type": "boolean"
+        }
+      }
+    },
+    "v1RemoveKustomizationRes": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1SourceRef": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/SourceRefKind"
+        },
+        "name": {
+          "type": "string"
         }
       }
     }

@@ -206,8 +206,8 @@ func (a *App) AddHelmRepository(helmRepo v1beta1.HelmRepository) ([]repository.F
 func (a *App) CustomResource() v1alpha1.Application {
 	return v1alpha1.Application{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       ApplicationKind,
-			APIVersion: ApplicationVersion,
+			Kind:       v1alpha1.ApplicationKind,
+			APIVersion: "wego.weave.works/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.Name,

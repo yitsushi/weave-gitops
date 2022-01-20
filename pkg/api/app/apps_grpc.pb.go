@@ -30,6 +30,21 @@ type AppsClient interface {
 	//
 	// RemoveApplication removes an Application from a cluster via GitOps.
 	RemoveApp(ctx context.Context, in *RemoveAppRequest, opts ...grpc.CallOption) (*RemoveAppResponse, error)
+	//
+	// AddKustomization adds a Kustomization to a cluster via GitOps.
+	AddKustomization(ctx context.Context, in *AddKustomizationReq, opts ...grpc.CallOption) (*AddKustomizationRes, error)
+	//
+	// ListKustomization lists Kustomizations from a cluster via GitOps.
+	ListKustomizations(ctx context.Context, in *ListKustomizationsReq, opts ...grpc.CallOption) (*ListKustomizationsRes, error)
+	//
+	// RemoveKustomization removes a Kustomization from a cluster via GitOps.
+	RemoveKustomizations(ctx context.Context, in *RemoveKustomizationReq, opts ...grpc.CallOption) (*RemoveKustomizationRes, error)
+	//
+	// AddGitRepository adds a git repository source to a cluster.
+	AddGitRepository(ctx context.Context, in *AddGitRepositoryReq, opts ...grpc.CallOption) (*AddGitRepositoryRes, error)
+	//
+	// ListGitRepository lists git repositories from a cluster.
+	ListGitRepositories(ctx context.Context, in *ListGitRepositoryReq, opts ...grpc.CallOption) (*ListGitRepositoryRes, error)
 }
 
 type appsClient struct {
@@ -76,6 +91,51 @@ func (c *appsClient) RemoveApp(ctx context.Context, in *RemoveAppRequest, opts .
 	return out, nil
 }
 
+func (c *appsClient) AddKustomization(ctx context.Context, in *AddKustomizationReq, opts ...grpc.CallOption) (*AddKustomizationRes, error) {
+	out := new(AddKustomizationRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Apps/AddKustomization", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appsClient) ListKustomizations(ctx context.Context, in *ListKustomizationsReq, opts ...grpc.CallOption) (*ListKustomizationsRes, error) {
+	out := new(ListKustomizationsRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Apps/ListKustomizations", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appsClient) RemoveKustomizations(ctx context.Context, in *RemoveKustomizationReq, opts ...grpc.CallOption) (*RemoveKustomizationRes, error) {
+	out := new(RemoveKustomizationRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Apps/RemoveKustomizations", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appsClient) AddGitRepository(ctx context.Context, in *AddGitRepositoryReq, opts ...grpc.CallOption) (*AddGitRepositoryRes, error) {
+	out := new(AddGitRepositoryRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Apps/AddGitRepository", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appsClient) ListGitRepositories(ctx context.Context, in *ListGitRepositoryReq, opts ...grpc.CallOption) (*ListGitRepositoryRes, error) {
+	out := new(ListGitRepositoryRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Apps/ListGitRepositories", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppsServer is the server API for Apps service.
 // All implementations must embed UnimplementedAppsServer
 // for forward compatibility
@@ -92,6 +152,21 @@ type AppsServer interface {
 	//
 	// RemoveApplication removes an Application from a cluster via GitOps.
 	RemoveApp(context.Context, *RemoveAppRequest) (*RemoveAppResponse, error)
+	//
+	// AddKustomization adds a Kustomization to a cluster via GitOps.
+	AddKustomization(context.Context, *AddKustomizationReq) (*AddKustomizationRes, error)
+	//
+	// ListKustomization lists Kustomizations from a cluster via GitOps.
+	ListKustomizations(context.Context, *ListKustomizationsReq) (*ListKustomizationsRes, error)
+	//
+	// RemoveKustomization removes a Kustomization from a cluster via GitOps.
+	RemoveKustomizations(context.Context, *RemoveKustomizationReq) (*RemoveKustomizationRes, error)
+	//
+	// AddGitRepository adds a git repository source to a cluster.
+	AddGitRepository(context.Context, *AddGitRepositoryReq) (*AddGitRepositoryRes, error)
+	//
+	// ListGitRepository lists git repositories from a cluster.
+	ListGitRepositories(context.Context, *ListGitRepositoryReq) (*ListGitRepositoryRes, error)
 	mustEmbedUnimplementedAppsServer()
 }
 
@@ -110,6 +185,21 @@ func (UnimplementedAppsServer) ListApps(context.Context, *ListAppRequest) (*List
 }
 func (UnimplementedAppsServer) RemoveApp(context.Context, *RemoveAppRequest) (*RemoveAppResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveApp not implemented")
+}
+func (UnimplementedAppsServer) AddKustomization(context.Context, *AddKustomizationReq) (*AddKustomizationRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddKustomization not implemented")
+}
+func (UnimplementedAppsServer) ListKustomizations(context.Context, *ListKustomizationsReq) (*ListKustomizationsRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListKustomizations not implemented")
+}
+func (UnimplementedAppsServer) RemoveKustomizations(context.Context, *RemoveKustomizationReq) (*RemoveKustomizationRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveKustomizations not implemented")
+}
+func (UnimplementedAppsServer) AddGitRepository(context.Context, *AddGitRepositoryReq) (*AddGitRepositoryRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddGitRepository not implemented")
+}
+func (UnimplementedAppsServer) ListGitRepositories(context.Context, *ListGitRepositoryReq) (*ListGitRepositoryRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitRepositories not implemented")
 }
 func (UnimplementedAppsServer) mustEmbedUnimplementedAppsServer() {}
 
@@ -196,6 +286,96 @@ func _Apps_RemoveApp_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Apps_AddKustomization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddKustomizationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppsServer).AddKustomization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Apps/AddKustomization",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppsServer).AddKustomization(ctx, req.(*AddKustomizationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Apps_ListKustomizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKustomizationsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppsServer).ListKustomizations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Apps/ListKustomizations",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppsServer).ListKustomizations(ctx, req.(*ListKustomizationsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Apps_RemoveKustomizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveKustomizationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppsServer).RemoveKustomizations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Apps/RemoveKustomizations",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppsServer).RemoveKustomizations(ctx, req.(*RemoveKustomizationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Apps_AddGitRepository_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGitRepositoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppsServer).AddGitRepository(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Apps/AddGitRepository",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppsServer).AddGitRepository(ctx, req.(*AddGitRepositoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Apps_ListGitRepositories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitRepositoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppsServer).ListGitRepositories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Apps/ListGitRepositories",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppsServer).ListGitRepositories(ctx, req.(*ListGitRepositoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Apps_ServiceDesc is the grpc.ServiceDesc for Apps service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -218,6 +398,26 @@ var Apps_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveApp",
 			Handler:    _Apps_RemoveApp_Handler,
+		},
+		{
+			MethodName: "AddKustomization",
+			Handler:    _Apps_AddKustomization_Handler,
+		},
+		{
+			MethodName: "ListKustomizations",
+			Handler:    _Apps_ListKustomizations_Handler,
+		},
+		{
+			MethodName: "RemoveKustomizations",
+			Handler:    _Apps_RemoveKustomizations_Handler,
+		},
+		{
+			MethodName: "AddGitRepository",
+			Handler:    _Apps_AddGitRepository_Handler,
+		},
+		{
+			MethodName: "ListGitRepositories",
+			Handler:    _Apps_ListGitRepositories_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

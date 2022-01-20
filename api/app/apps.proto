@@ -4,6 +4,8 @@ package gitops_server.v1;
 
 option go_package = "github.com/weaveworks/weave-gitops/core/api/apps";
 
+import "api/app/kustomize.proto";
+import "api/app/source.proto";
 import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -19,14 +21,14 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 };
 
 message App {
-  string name = 1;
-  string description = 2;
-  string display_name = 3;
-  string id = 4;
+  string namespace = 1;
+  string name = 2;
+  string description = 3;
+  string display_name = 4;
 }
 
 message AddAppRequest {
-  string repo_name = 1;
+  string namespace = 1;
   string name = 2;
   string description = 3;
   string display_name = 4;
@@ -38,7 +40,7 @@ message AddAppResponse {
 }
 
 message GetAppRequest {
-  string repo_name = 1;
+  string namespace = 1;
   string app_name = 2;
 }
 
@@ -47,7 +49,7 @@ message GetAppResponse {
 }
 
 message ListAppRequest {
-  string repo_name = 1;
+  string namespace = 1;
 }
 
 message ListAppResponse {
@@ -55,10 +57,9 @@ message ListAppResponse {
 }
 
 message RemoveAppRequest {
-  string repo_name = 1;
+  string namespace = 1;
   string name = 2;
-  string namespace = 3;
-  bool   autoMerge = 4;
+  bool   autoMerge = 3;
 }
 
 message RemoveAppResponse {
@@ -71,7 +72,7 @@ service Apps {
     */
   rpc AddApp(AddAppRequest) returns (AddAppResponse) {
     option (google.api.http) = {
-      post : "/v1/repo/{repo_name}/app"
+      post : "/v1/namespace/{namespace}/app"
       body: "*"
     };
   }
@@ -81,7 +82,7 @@ service Apps {
   */
   rpc GetApp(GetAppRequest) returns (GetAppResponse) {
     option (google.api.http) = {
-      get : "/v1/repo/{repo_name}/app/{app_name}"
+      get : "/v1/namespace/{namespace}/app/{app_name}"
     };
   }
 
@@ -90,7 +91,7 @@ service Apps {
     */
   rpc ListApps(ListAppRequest) returns (ListAppResponse) {
     option (google.api.http) = {
-      get : "/v1/repo/{repo_name}/app"
+      get : "/v1/namespace/{namespace}/app"
     };
   }
 
@@ -99,8 +100,56 @@ service Apps {
   */
   rpc RemoveApp(RemoveAppRequest) returns (RemoveAppResponse) {
     option (google.api.http) = {
-      delete : "/v1/repo/{repo_name}/app/{name}"
+      delete : "/v1/namespace/{namespace}/app/{name}"
       body: "*"
+    };
+  }
+
+  /*
+    * AddKustomization adds a Kustomization to a cluster via GitOps.
+    */
+  rpc AddKustomization(AddKustomizationReq) returns (AddKustomizationRes) {
+    option (google.api.http) = {
+      post : "/v1/namespace/{namespace}/app/{app_name}/kustomization"
+      body: "*"
+    };
+  }
+
+  /*
+    * ListKustomization lists Kustomizations from a cluster via GitOps.
+    */
+  rpc ListKustomizations(ListKustomizationsReq) returns (ListKustomizationsRes) {
+    option (google.api.http) = {
+      get : "/v1/namespace/{namespace}/app/{app_name}/kustomization"
+    };
+  }
+
+  /*
+  * RemoveKustomization removes a Kustomization from a cluster via GitOps.
+  */
+  rpc RemoveKustomizations(RemoveKustomizationReq) returns (RemoveKustomizationRes) {
+    option (google.api.http) = {
+      delete : "/v1/namespace/{namespace}/app/{app_name}/kustomization/{kustomization_name}"
+      body: "*"
+    };
+  }
+
+  /*
+    * AddGitRepository adds a git repository source to a cluster.
+    */
+  rpc AddGitRepository(AddGitRepositoryReq) returns (AddGitRepositoryRes) {
+    option (google.api.http) = {
+      post : "/v1/namespace/{namespace}/app/{app_name}/gitrepository"
+      body: "*"
+    };
+  }
+
+  /*
+    * ListGitRepository lists git repositories from a cluster.
+    */
+  rpc ListGitRepositories(ListGitRepositoryReq) returns (ListGitRepositoryRes) {
+    option (google.api.http) = {
+      get : "/v1/namespace/{namespace}/app/{app_name}/gitrepository"
     };
   }
 }

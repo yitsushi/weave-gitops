@@ -14,130 +14,250 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// AppKustomizationClient is the client API for AppKustomization service.
+// FluxClient is the client API for Flux service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type AppKustomizationClient interface {
+type FluxClient interface {
 	//
-	// AddKustomization adds a Kustomization to a cluster via GitOps.
-	Add(ctx context.Context, in *AddKustomizationRequest, opts ...grpc.CallOption) (*AddKustomizationResponse, error)
+	// AddKustomization adds a Kustomization to a cluster.
+	AddKustomization(ctx context.Context, in *AddKustomizationReq, opts ...grpc.CallOption) (*AddKustomizationRes, error)
 	//
-	// RemoveKustomization removes a Kustomization from a cluster via GitOps.
-	Remove(ctx context.Context, in *RemoveKustomizationRequest, opts ...grpc.CallOption) (*RemoveKustomizationResponse, error)
+	// ListKustomizations lists kustomization from a cluster.
+	ListKustomizations(ctx context.Context, in *ListKustomizationsReq, opts ...grpc.CallOption) (*ListKustomizationsRes, error)
+	//
+	// RemoveKustomization removes a Kustomization from a cluster.
+	RemoveKustomization(ctx context.Context, in *RemoveKustomizationReq, opts ...grpc.CallOption) (*RemoveKustomizationRes, error)
+	//
+	// AddGitRepository adds a git repository source to a cluster.
+	AddGitRepository(ctx context.Context, in *AddGitRepositoryReq, opts ...grpc.CallOption) (*AddGitRepositoryRes, error)
+	//
+	// ListGitRepository lists git repositories from a cluster.
+	ListGitRepositories(ctx context.Context, in *ListGitRepositoryReq, opts ...grpc.CallOption) (*ListGitRepositoryRes, error)
 }
 
-type appKustomizationClient struct {
+type fluxClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewAppKustomizationClient(cc grpc.ClientConnInterface) AppKustomizationClient {
-	return &appKustomizationClient{cc}
+func NewFluxClient(cc grpc.ClientConnInterface) FluxClient {
+	return &fluxClient{cc}
 }
 
-func (c *appKustomizationClient) Add(ctx context.Context, in *AddKustomizationRequest, opts ...grpc.CallOption) (*AddKustomizationResponse, error) {
-	out := new(AddKustomizationResponse)
-	err := c.cc.Invoke(ctx, "/gitops_server.v1.AppKustomization/Add", in, out, opts...)
+func (c *fluxClient) AddKustomization(ctx context.Context, in *AddKustomizationReq, opts ...grpc.CallOption) (*AddKustomizationRes, error) {
+	out := new(AddKustomizationRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Flux/AddKustomization", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *appKustomizationClient) Remove(ctx context.Context, in *RemoveKustomizationRequest, opts ...grpc.CallOption) (*RemoveKustomizationResponse, error) {
-	out := new(RemoveKustomizationResponse)
-	err := c.cc.Invoke(ctx, "/gitops_server.v1.AppKustomization/Remove", in, out, opts...)
+func (c *fluxClient) ListKustomizations(ctx context.Context, in *ListKustomizationsReq, opts ...grpc.CallOption) (*ListKustomizationsRes, error) {
+	out := new(ListKustomizationsRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Flux/ListKustomizations", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// AppKustomizationServer is the server API for AppKustomization service.
-// All implementations must embed UnimplementedAppKustomizationServer
+func (c *fluxClient) RemoveKustomization(ctx context.Context, in *RemoveKustomizationReq, opts ...grpc.CallOption) (*RemoveKustomizationRes, error) {
+	out := new(RemoveKustomizationRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Flux/RemoveKustomization", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fluxClient) AddGitRepository(ctx context.Context, in *AddGitRepositoryReq, opts ...grpc.CallOption) (*AddGitRepositoryRes, error) {
+	out := new(AddGitRepositoryRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Flux/AddGitRepository", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fluxClient) ListGitRepositories(ctx context.Context, in *ListGitRepositoryReq, opts ...grpc.CallOption) (*ListGitRepositoryRes, error) {
+	out := new(ListGitRepositoryRes)
+	err := c.cc.Invoke(ctx, "/gitops_server.v1.Flux/ListGitRepositories", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FluxServer is the server API for Flux service.
+// All implementations must embed UnimplementedFluxServer
 // for forward compatibility
-type AppKustomizationServer interface {
+type FluxServer interface {
 	//
-	// AddKustomization adds a Kustomization to a cluster via GitOps.
-	Add(context.Context, *AddKustomizationRequest) (*AddKustomizationResponse, error)
+	// AddKustomization adds a Kustomization to a cluster.
+	AddKustomization(context.Context, *AddKustomizationReq) (*AddKustomizationRes, error)
 	//
-	// RemoveKustomization removes a Kustomization from a cluster via GitOps.
-	Remove(context.Context, *RemoveKustomizationRequest) (*RemoveKustomizationResponse, error)
-	mustEmbedUnimplementedAppKustomizationServer()
+	// ListKustomizations lists kustomization from a cluster.
+	ListKustomizations(context.Context, *ListKustomizationsReq) (*ListKustomizationsRes, error)
+	//
+	// RemoveKustomization removes a Kustomization from a cluster.
+	RemoveKustomization(context.Context, *RemoveKustomizationReq) (*RemoveKustomizationRes, error)
+	//
+	// AddGitRepository adds a git repository source to a cluster.
+	AddGitRepository(context.Context, *AddGitRepositoryReq) (*AddGitRepositoryRes, error)
+	//
+	// ListGitRepository lists git repositories from a cluster.
+	ListGitRepositories(context.Context, *ListGitRepositoryReq) (*ListGitRepositoryRes, error)
+	mustEmbedUnimplementedFluxServer()
 }
 
-// UnimplementedAppKustomizationServer must be embedded to have forward compatible implementations.
-type UnimplementedAppKustomizationServer struct {
+// UnimplementedFluxServer must be embedded to have forward compatible implementations.
+type UnimplementedFluxServer struct {
 }
 
-func (UnimplementedAppKustomizationServer) Add(context.Context, *AddKustomizationRequest) (*AddKustomizationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
+func (UnimplementedFluxServer) AddKustomization(context.Context, *AddKustomizationReq) (*AddKustomizationRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddKustomization not implemented")
 }
-func (UnimplementedAppKustomizationServer) Remove(context.Context, *RemoveKustomizationRequest) (*RemoveKustomizationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Remove not implemented")
+func (UnimplementedFluxServer) ListKustomizations(context.Context, *ListKustomizationsReq) (*ListKustomizationsRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListKustomizations not implemented")
 }
-func (UnimplementedAppKustomizationServer) mustEmbedUnimplementedAppKustomizationServer() {}
+func (UnimplementedFluxServer) RemoveKustomization(context.Context, *RemoveKustomizationReq) (*RemoveKustomizationRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveKustomization not implemented")
+}
+func (UnimplementedFluxServer) AddGitRepository(context.Context, *AddGitRepositoryReq) (*AddGitRepositoryRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddGitRepository not implemented")
+}
+func (UnimplementedFluxServer) ListGitRepositories(context.Context, *ListGitRepositoryReq) (*ListGitRepositoryRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitRepositories not implemented")
+}
+func (UnimplementedFluxServer) mustEmbedUnimplementedFluxServer() {}
 
-// UnsafeAppKustomizationServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to AppKustomizationServer will
+// UnsafeFluxServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to FluxServer will
 // result in compilation errors.
-type UnsafeAppKustomizationServer interface {
-	mustEmbedUnimplementedAppKustomizationServer()
+type UnsafeFluxServer interface {
+	mustEmbedUnimplementedFluxServer()
 }
 
-func RegisterAppKustomizationServer(s grpc.ServiceRegistrar, srv AppKustomizationServer) {
-	s.RegisterService(&AppKustomization_ServiceDesc, srv)
+func RegisterFluxServer(s grpc.ServiceRegistrar, srv FluxServer) {
+	s.RegisterService(&Flux_ServiceDesc, srv)
 }
 
-func _AppKustomization_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddKustomizationRequest)
+func _Flux_AddKustomization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddKustomizationReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppKustomizationServer).Add(ctx, in)
+		return srv.(FluxServer).AddKustomization(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gitops_server.v1.AppKustomization/Add",
+		FullMethod: "/gitops_server.v1.Flux/AddKustomization",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppKustomizationServer).Add(ctx, req.(*AddKustomizationRequest))
+		return srv.(FluxServer).AddKustomization(ctx, req.(*AddKustomizationReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AppKustomization_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveKustomizationRequest)
+func _Flux_ListKustomizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKustomizationsReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AppKustomizationServer).Remove(ctx, in)
+		return srv.(FluxServer).ListKustomizations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gitops_server.v1.AppKustomization/Remove",
+		FullMethod: "/gitops_server.v1.Flux/ListKustomizations",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppKustomizationServer).Remove(ctx, req.(*RemoveKustomizationRequest))
+		return srv.(FluxServer).ListKustomizations(ctx, req.(*ListKustomizationsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// AppKustomization_ServiceDesc is the grpc.ServiceDesc for AppKustomization service.
+func _Flux_RemoveKustomization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveKustomizationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FluxServer).RemoveKustomization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Flux/RemoveKustomization",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FluxServer).RemoveKustomization(ctx, req.(*RemoveKustomizationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Flux_AddGitRepository_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGitRepositoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FluxServer).AddGitRepository(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Flux/AddGitRepository",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FluxServer).AddGitRepository(ctx, req.(*AddGitRepositoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Flux_ListGitRepositories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitRepositoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FluxServer).ListGitRepositories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gitops_server.v1.Flux/ListGitRepositories",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FluxServer).ListGitRepositories(ctx, req.(*ListGitRepositoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Flux_ServiceDesc is the grpc.ServiceDesc for Flux service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var AppKustomization_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "gitops_server.v1.AppKustomization",
-	HandlerType: (*AppKustomizationServer)(nil),
+var Flux_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "gitops_server.v1.Flux",
+	HandlerType: (*FluxServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Add",
-			Handler:    _AppKustomization_Add_Handler,
+			MethodName: "AddKustomization",
+			Handler:    _Flux_AddKustomization_Handler,
 		},
 		{
-			MethodName: "Remove",
-			Handler:    _AppKustomization_Remove_Handler,
+			MethodName: "ListKustomizations",
+			Handler:    _Flux_ListKustomizations_Handler,
+		},
+		{
+			MethodName: "RemoveKustomization",
+			Handler:    _Flux_RemoveKustomization_Handler,
+		},
+		{
+			MethodName: "AddGitRepository",
+			Handler:    _Flux_AddGitRepository_Handler,
+		},
+		{
+			MethodName: "ListGitRepositories",
+			Handler:    _Flux_ListGitRepositories_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -86,10 +87,12 @@ func NewRestClient() (*rest.RESTClient, error) {
 		return nil, fmt.Errorf("kube.NewClient cluster config: %w", err)
 	}
 
-	//scheme := CreateScheme()
-	//rawClient, err := client.New(config, client.Options{
-	//	Scheme: scheme,
-	//})
+	config.GroupVersion = &wego.GroupVersion
+	config.APIPath = "/apis"
+
+	scheme := CreateScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+	config.NegotiatedSerializer = codecs.WithoutConversion()
 
 	client, err := rest.RESTClientFor(config)
 

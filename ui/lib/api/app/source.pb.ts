@@ -4,11 +4,28 @@
 * This file is a generated Typescript file for GRPC Gateway, DO NOT MODIFY
 */
 
+export enum SourceRefKind {
+  GitRepository = "GitRepository",
+  Bucket = "Bucket",
+  HelmRepository = "HelmRepository",
+}
+
 export enum SourceType {
   Git = "Git",
   Bucket = "Bucket",
   Helm = "Helm",
   Chart = "Chart",
+}
+
+export type Interval = {
+  hours?: string
+  minutes?: string
+  seconds?: string
+}
+
+export type SourceRef = {
+  kind?: SourceRefKind
+  name?: string
 }
 
 export type Artifact = {
@@ -36,16 +53,49 @@ export type GitRepositoryRef = {
 
 export type Source = {
   name?: string
+  namespace?: string
   url?: string
   reference?: GitRepositoryRef
   type?: SourceType
   provider?: string
   bucketname?: string
   region?: string
-  namespace?: string
   gitimplementation?: string
   timeout?: string
   secretRefName?: string
   conditions?: Condition[]
   artifact?: Artifact
+}
+
+export type GitRepository = {
+  namespace?: string
+  name?: string
+  url?: string
+  reference?: GitRepositoryRef
+  secretRef?: string
+  interval?: Interval
+}
+
+export type AddGitRepositoryReq = {
+  namespace?: string
+  appName?: string
+  name?: string
+  url?: string
+  reference?: GitRepositoryRef
+  secretRef?: string
+  interval?: Interval
+}
+
+export type AddGitRepositoryRes = {
+  success?: boolean
+  gitRepository?: GitRepository
+}
+
+export type ListGitRepositoryReq = {
+  namespace?: string
+  appName?: string
+}
+
+export type ListGitRepositoryRes = {
+  gitRepositories?: GitRepository[]
 }
