@@ -4,6 +4,7 @@ import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward";
 import CheckCircleIcon from "@material-ui/icons/CheckCircle";
 import DeleteIcon from "@material-ui/icons/Delete";
 import ErrorIcon from "@material-ui/icons/Error";
+import FilterList from "@material-ui/icons/FilterList";
 import HourglassFullIcon from "@material-ui/icons/HourglassFull";
 import LaunchIcon from "@material-ui/icons/Launch";
 import NavigateNextIcon from "@material-ui/icons/NavigateNext";
@@ -26,6 +27,7 @@ export enum IconType {
   ErrorIcon,
   CheckCircleIcon,
   HourglassFullIcon,
+  FilterList,
 }
 
 type Props = {
@@ -70,6 +72,9 @@ function getIcon(i: IconType) {
 
     case IconType.ErrorIcon:
       return ErrorIcon;
+
+    case IconType.FilterList:
+      return FilterList;
 
     default:
       break;
