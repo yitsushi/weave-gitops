@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"runtime"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	fakehttp "github.com/weaveworks/weave-gitops/pkg/vendorfakes/http"
@@ -36,6 +35,32 @@ func (t *testServerTransport) RoundTrip(r *http.Request) (*http.Response, error)
 	r.URL = tsUrl
 
 	return t.roundTripper.RoundTrip(r)
+}
+
+type outcome struct {
+	string
+	error
+}
+
+type timeSpy struct {
+	mutex  sync.Mutex
+	time   time.Time
+	sleeps []time.Duration
+}
+
+func (t *timeSpy) sleep(d time.Duration) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	t.time = t.time.Add(d)
+	t.sleeps = append(t.sleeps, d)
+}
+
+func (t *timeSpy) now() time.Time {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	return t.time
 }
 
 var _ = Describe("Github Device Flow", func() {
@@ -91,56 +116,80 @@ var _ = Describe("Github Device Flow", func() {
 		Expect(cliOutput.String()).To(ContainSubstring(verificationUri))
 	})
 
-	// These auth flow tests are failing intermittently, so bypass them for now
-	XDescribe("pollAuthStatus", func() {
+	FDescribe("pollAuthStatus", func() {
 		It("retries after a slow_down response from github", func() {
-			rt := newMockRoundTripper(3, token)
+			t := timeSpy{}
+			rt := newMockRoundTripper(1, token, t.now)
 			client.Transport = &testServerTransport{testServeUrl: ts.URL, roundTripper: rt}
 			interval := 5 * time.Second
 
-			c := clock.NewMock()
+			outcomeChan := make(chan outcome)
 
 			go func() {
-				_, err := pollAuthStatus(c.Sleep, interval, client, "somedevicecode")
-				Expect(err).NotTo(HaveOccurred())
+				resultToken, err := pollAuthStatus(t.sleep, interval, client, "somedevicecode")
+				outcomeChan <- outcome{resultToken, err}
 			}()
-			runtime.Gosched()
 
-			// check one second after interval
-			c.Add(interval + 1*time.Second)
-			Expect(rt.calls).To(Equal(1), "should have tried the first time")
+			expectedSleeps := []time.Duration{
+				interval,
+				interval + 5*time.Second,
+			}
 
-			// check during back off
-			c.Add(interval)
-			Expect(rt.calls).To(Equal(1), "should NOT have retried early")
-
-			// check one second after back off ended
-			c.Add(interval + 6*time.Second)
-			Expect(rt.calls).To(Equal(2), "should have backed off 10 seconds")
+			<-outcomeChan
+			Expect(t.sleeps).To(Equal(expectedSleeps))
 		})
-		It("returns a token after a slow_down", func() {
-			rt := newMockRoundTripper(1, token)
+
+		It("keeps slowing down when told to", func() {
+			t := timeSpy{}
+			rt := newMockRoundTripper(3, token, t.now)
 			client.Transport = &testServerTransport{testServeUrl: ts.URL, roundTripper: rt}
 			interval := 5 * time.Second
-			c := clock.NewMock()
 
-			var resultToken string
-			var err error
+			outcomeChan := make(chan outcome)
+
 			go func() {
-				resultToken, err = pollAuthStatus(c.Sleep, interval, client, "somedevicecode")
-				Expect(err).NotTo(HaveOccurred())
+				resultToken, err := pollAuthStatus(t.sleep, interval, client, "somedevicecode")
+				outcomeChan <- outcome{resultToken, err}
 			}()
-			runtime.Gosched()
 
-			// check 1 second after interval
-			c.Add(interval + 1*time.Second)
-			Expect(rt.calls).To(Equal(1), "should have tried the first time")
+			expectedSleeps := []time.Duration{
+				interval,
+				interval + 5*time.Second,
+				interval + 10*time.Second,
+				interval + 15*time.Second,
+			}
 
-			// check 1 second after back off ended
-			c.Add(interval + 6*time.Second)
-			Expect(rt.calls).To(Equal(2), "should have tried again after back off")
+			<-outcomeChan
+			Expect(t.sleeps).To(Equal(expectedSleeps))
+			pollTimes := []time.Time{}
+			for pollTime := range rt.callChan {
+				pollTimes = append(pollTimes, pollTime)
+			}
+			Expect(pollTimes).To(Equal([]time.Time{
+				time.Time{}.Add(expectedSleeps[0]),
+				time.Time{}.Add(expectedSleeps[0] + expectedSleeps[1]),
+				time.Time{}.Add(expectedSleeps[0] + expectedSleeps[1] + expectedSleeps[2]),
+				time.Time{}.Add(expectedSleeps[0] + expectedSleeps[1] + expectedSleeps[2] + expectedSleeps[3]),
+			}))
+		})
 
-			Expect(resultToken).To(Equal(token))
+		It("returns a token after a slow_down", func() {
+			t := timeSpy{}
+			rt := newMockRoundTripper(1, token, t.now)
+			client.Transport = &testServerTransport{testServeUrl: ts.URL, roundTripper: rt}
+			interval := 5 * time.Second
+
+			outcomeChan := make(chan outcome)
+
+			go func() {
+				resultToken, err := pollAuthStatus(t.sleep, interval, client, "somedevicecode")
+				outcomeChan <- outcome{resultToken, err}
+			}()
+
+			outcome := <-outcomeChan
+
+			Expect(outcome.string).To(Equal(token))
+			Expect(outcome.error).NotTo(HaveOccurred())
 		})
 	})
 })
@@ -164,8 +213,9 @@ var _ = Describe("ValidateToken", func() {
 })
 
 type mockAuthRoundTripper struct {
-	fn    func(r *http.Request) (*http.Response, error)
-	calls int
+	fn       func(r *http.Request) (*http.Response, error)
+	calls    int
+	callChan chan time.Time
 }
 
 func (rt *mockAuthRoundTripper) MockRoundTrip(fn func(r *http.Request) (*http.Response, error)) {
@@ -176,15 +226,24 @@ func (rt *mockAuthRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 	return rt.fn(r)
 }
 
-func newMockRoundTripper(pollCount int, token string) *mockAuthRoundTripper {
-	rt := &mockAuthRoundTripper{calls: 0}
+func newMockRoundTripper(pollCount int, token string, now func() time.Time) *mockAuthRoundTripper {
+	rt := &mockAuthRoundTripper{calls: 0, callChan: make(chan time.Time, pollCount+1)}
 
 	rt.MockRoundTrip(func(r *http.Request) (*http.Response, error) {
 		b := bytes.NewBuffer(nil)
 
-		data := githubAuthResponse{Error: "slow_down"}
-		if rt.calls == pollCount {
-			data = githubAuthResponse{Error: "", AccessToken: token}
+		var data githubAuthResponse
+
+		switch {
+		case rt.calls > pollCount:
+			panic("mock API called after successful request")
+		case rt.calls == pollCount:
+			data = githubAuthResponse{AccessToken: token}
+			rt.callChan <- now()
+			close(rt.callChan)
+		default:
+			data = githubAuthResponse{Error: "slow_down"}
+			rt.callChan <- now()
 		}
 
 		if err := json.NewEncoder(b).Encode(data); err != nil {
