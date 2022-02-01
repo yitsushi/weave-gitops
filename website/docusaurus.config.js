@@ -107,6 +107,13 @@ module.exports = {
     [
       "@docusaurus/preset-classic",
       {
+        gtag: {
+          // You can also use your "G-" Measurement ID here.
+          // Bogus commit to trigger a build
+          trackingID: process.env.GA_KEY,
+          // Optional fields.
+          anonymizeIP: true, // Should IPs be anonymized?
+        },
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
