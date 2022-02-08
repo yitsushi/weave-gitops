@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - v2
   pull_request:
     branches:
       - main
+      - v2
   workflow_dispatch:
 
 jobs:
@@ -36,22 +38,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Fake Install flux
-        run: mkdir -p pkg/flux/bin && touch pkg/flux/bin/flux
-      - name: Remove UI deps from Scan
-        run: rm package-lock.json && rm package.json && make cmd/gitops/ui/run/dist/index.html
+      - uses: snyk/actions/setup@master
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.17'
+      - name: Generate UI file to embed
+        run: make cmd/gitops/ui/run/dist/index.html
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/golang@master
+        run: snyk test --all-projects --sarif-file-output=snyk.code.sarif
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
-        with:
-          args: --sarif-file-output=snyk.code.sarif
+        continue-on-error: true # To make sure that SARIF upload gets called
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: snyk.code.sarif
-      - name: Remove fake flux
-        run: rm -rv pkg/flux/bin
+      - name: Upload a report to Snyk to report new vulnerabilities
+        run: snyk monitor --all-projects
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
+        if: github.event.push
 
   codeql:
     name: CodeQL
